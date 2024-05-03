@@ -9,6 +9,14 @@ pub struct Token {
     line: usize
 }
 impl Token {
+    pub fn new(t_type: TokenType, lexeme: String, literal: Object, line: usize) -> Token {
+        Token{
+            t_type,
+            lexeme,
+            literal,
+            line
+        }
+    }
     pub fn from(t_type: TokenType, lexeme: String, literal: Object, line: usize) -> Token {
         Token{
             t_type,

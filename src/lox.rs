@@ -13,19 +13,19 @@ macro_rules! read_line {
 }
 
 // Lox
-pub struct Lox {
-    had_error: bool
-}
+pub struct Lox {}
 
+pub static mut had_error: bool = false;
 impl Lox {
-    // Constructor
-    pub fn new() -> Self {
+
+    fn new() -> Self {
         Self {
-            had_error: false
+
         }
     }
+
     // Init method
-    pub fn init(&mut self, args: Vec<String>) {
+    pub unsafe fn init(&mut self, args: Vec<String>) {
         if args.len() > 1 {
             process::exit(64);
         } else if args.len() == 1 {
@@ -44,7 +44,7 @@ impl Lox {
         }
     }
 
-    fn run_prompt(&mut self){
+    unsafe fn run_prompt(&mut self){
         // Clear stdout
         let _ = io::stdout().flush();
 
@@ -62,7 +62,7 @@ impl Lox {
             self.run(input);
 
             // Reset error
-            self.had_error = false;
+            had_error = false;
         }
     }
 
@@ -78,13 +78,13 @@ impl Lox {
 
     }
 
-    fn error(&mut self, line: i32, message: String) {
-        self.report(line," ".to_string(), message)
+    pub unsafe fn error(line: usize, message: String) {
+        Lox::report(line," ".to_string(), message)
     }
 
-    fn report(&mut self, line: i32, where_is: String, message: String){
-        println!("Error {} at line {}\nMessage: {} ", where_is, line, message)
-        self.had_error = true;
+    unsafe fn report(line: i32, where_is: String, message: String){
+        println!("Error {} at line {}\nMessage: {} ", where_is, line, message);
+        had_error = true;
     }
 
 

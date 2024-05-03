@@ -1,8 +1,9 @@
 use std::error::Error;
+use crate::lox::Lox;
 use crate::object::Object;
 use crate::token::Token;
 use crate::token_type::TokenType;
-use crate::token_type::TokenType::EOF;
+use crate::token_type::TokenType::*;
 
 pub struct Scanner {
     source: String,
@@ -39,13 +40,77 @@ impl Scanner {
     }
 
     // 4.5 -> Recognizing Lexemes
-    fn scan_token(&self) {
+    fn scan_token(&mut self) {
         let c: char = self.advance();
         match c {
-            '(' => todo!(),
+            // Normal Tokens
+
+            '(' => self.add_token(LEFT_PAREN),
+            ')' => self.add_token(RIGHT_PAREN),
+            '{' => self.add_token(LEFT_BRACE),
+            '}' => self.add_token(RIGHT_BRACE),
+            ',' => self.add_token(COMMA),
+            '.' => self.add_token(DOT),
+            '-' => self.add_token(MINUS),
+            '+' => self.add_token(PLUS),
+            ';' => self.add_token(SEMICOLON),
+            '*' => self.add_token(STAR),
+
+            // Combination
+
+             '!'=> self.add_token(if self.char_match('=') { BANG_EQUAL } else { BANG }),
+             '='=> self.add_token(if self.char_match('=') { EQUAL_EQUAL } else { EQUAL }),
+             '<'=> self.add_token(if self.char_match('=') { LESS_EQUAL } else { LESS }),
+             '>'=> self.add_token(if self.char_match('=') { GREATER_EQUAL } else { GREATER }),
+
+            '/' => {
+                if self.char_match('/') {
+                    while self.peek() != '\n' && !self.is_at_end() {
+                        self.advance()
+                    }
+                } else {
+                    self.add_token(SLASH)
+                }
+            }
+
+            // Spaces
+             ' ' => {}
+            '\r' => {}
+             '\t' => {}
+
+            // Newline
+             '\n' => { self.line += 1}
+
+            // Literals
+            '"' => {
+                self.string()
+            }
+
+            // Default
+
             _ => {}
         }
-
+    }
+    unsafe fn string(&mut self) {
+        while self.peek() != '"' && !self.is_at_end() {
+            if self.peek() == '\n' {
+                self.line += 1
+            }
+            if self.is_at_end() {
+                Lox::error(self.line, "Unterminated String".to_string())
+            }
+        }
+    }
+    fn char_match(&mut self, expected: char) -> bool {
+        if self.is_at_end() ? {return false}
+        let c = self.source.chars().nth(self.current).expect("Error on char_match");
+        if c != expected ? { return false }
+        self.current += 1;
+        true
+    }
+    fn peek(&self) -> char {
+        if self.is_at_end() {return '\0'}
+        self.source.chars().nth(self.current).expect("Error on peek")
     }
     fn advance(&self) -> char {
         self.source.chars().nth(self.current).expect("Error on advance")
