@@ -4,6 +4,7 @@ mod scanner;
 mod token_type;
 mod token;
 mod object;
+mod error_reporter;
 
 fn main() {
     // Arguments
@@ -12,4 +13,6 @@ fn main() {
 
     // Initializing lox interpreter
     lox.init(args)
+
+    // https://www.geeksforgeeks.org/error-handling-compiler-design/
 }

@@ -1,27 +1,50 @@
+use std::cmp::PartialEq;
+use std::collections::HashMap;
 use std::error::Error;
+use crate::error_reporter::ErrorReporter;
 use crate::lox::Lox;
 use crate::object::Object;
 use crate::token::Token;
 use crate::token_type::TokenType;
 use crate::token_type::TokenType::*;
 
-pub struct Scanner {
+pub struct Scanner<'a> {
     source: String,
     tokens: Vec<Token>,
     start: usize,
     current: usize,
-    line: usize
+    line: usize,
+    keywords: HashMap<String, TokenType>,
+    error_reporter: &'a ErrorReporter
 }
-
 impl Scanner {
 
-    pub fn new(source: String) -> Self {
+    pub fn new(source: String, error_reporter: &ErrorReporter) -> Self {
+        let mut keywords = HashMap::new();
+        keywords.insert("and".to_string(),AND);
+        keywords.insert("class".to_string(),CLASS);
+        keywords.insert("else".to_string(),ELSE);
+        keywords.insert("false".to_string(),FALSE);
+        keywords.insert("for".to_string(),FOR);
+        keywords.insert("fun".to_string(),FUN);
+        keywords.insert("if".to_string(),IF);
+        keywords.insert("nil".to_string(),NIL);
+        keywords.insert("or".to_string(),OR);
+        keywords.insert("print".to_string(),PRINT);
+        keywords.insert("super".to_string(),SUPER);
+        keywords.insert("this".to_string(),THIS);
+        keywords.insert("true".to_string(),TRUE);
+        keywords.insert("var".to_string(),VAR);
+        keywords.insert("while".to_string(),WHILE);
+
         Self {
             source,
             tokens: Vec::new(),
             start: 0,
             current: 0,
-            line: 1
+            line: 1,
+            keywords,
+            error_reporter
         }
     }
 
@@ -43,8 +66,9 @@ impl Scanner {
     fn scan_token(&mut self) {
         let c: char = self.advance();
         match c {
-            // Normal Tokens
 
+            // Recognizing Lexemes
+            // Normal lexemes
             '(' => self.add_token(LEFT_PAREN),
             ')' => self.add_token(RIGHT_PAREN),
             '{' => self.add_token(LEFT_BRACE),
@@ -56,6 +80,7 @@ impl Scanner {
             ';' => self.add_token(SEMICOLON),
             '*' => self.add_token(STAR),
 
+            // Operators
             // Combination
 
              '!'=> self.add_token(if self.char_match('=') { BANG_EQUAL } else { BANG }),
@@ -81,6 +106,7 @@ impl Scanner {
             // Newline
              '\n' => { self.line += 1}
 
+            // Longer Lexemes
             // Literals
             '"' => {
                 self.string()
@@ -88,17 +114,64 @@ impl Scanner {
 
             // Default
 
-            _ => {}
+            _ => {
+                // Number literals
+                if Self::is_digit(c) {
+                    self.number();
+                } else if Self::is_alpha(c) {
+                    self.identifier()
+                } else {
+                    self.error_reporter.error(self.line,"Unexpected character.".to_string())
+                }
+
+            }
         }
     }
-    unsafe fn string(&mut self) {
+    fn identifier(&mut self) {
+        while Self::is_alpha_numeric(self.peek()) {
+            self.advance();
+            let text = self.source[self.start..self.current].to_string();
+            let t_type: Option<&TokenType> = self.keywords.get(&text);
+            if let Some(v) = t_type {
+                if v == &IDENTIFIER  {
+                    self.add_token(IDENTIFIER);
+                }
+            }
+        }
+    }
+    fn number(&mut self) {
+        while (Self::is_digit(self.peek())) {
+            self.advance();
+
+            // Look for a fractional part.
+            if self.peek() == '.' && Self::is_digit(self.peek_next()) {
+                self.advance();
+                while Self::is_digit(self.peek()) {
+                    self.advance()
+                }
+            }
+        }
+        self.add_token_lit(NUMBER,Object::Number(self.source[self.start..self.current].parse().unwrap()))
+    }
+
+
+    // MAYBE MAKE ERROR7/s
+    fn string(&mut self) {
         while self.peek() != '"' && !self.is_at_end() {
             if self.peek() == '\n' {
                 self.line += 1
             }
             if self.is_at_end() {
-                Lox::error(self.line, "Unterminated String".to_string())
+                self.error_reporter.error(self.line, "Unterminated String".to_string());
+                return;
             }
+            // The closing "
+            self.advance();
+
+            // Trim the surrounding quotes.
+            let value: String = self.source[self.start+1..self.current-1].to_string();
+            self.add_token_lit(STRING, Object::String(value))
+
         }
     }
     fn char_match(&mut self, expected: char) -> bool {
@@ -111,6 +184,24 @@ impl Scanner {
     fn peek(&self) -> char {
         if self.is_at_end() {return '\0'}
         self.source.chars().nth(self.current).expect("Error on peek")
+    }
+    fn peek_next(&mut self) -> char {
+        if self.current +1 >= self.source.len() {
+            return '\0'
+        }
+        self.source.nth(self.current).expect("Error on peekNext");
+    }
+    fn is_alpha_numberic(c: char) -> bool {
+        return Self::is_alpha(c) || Self::is_digit(c);
+    }
+    fn is_alpha(c: char) -> bool {
+        return (c >= 'a' && c <= 'z') ||
+            (c >= 'A' && c <= 'Z') ||
+            c == '_';
+    }
+
+    fn is_digit(c: char) -> bool {
+        c >= '0' && c <= '9'
     }
     fn advance(&self) -> char {
         self.source.chars().nth(self.current).expect("Error on advance")
