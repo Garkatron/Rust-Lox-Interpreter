@@ -13,6 +13,6 @@ fn main() {
 
     // Initializing lox interpreter
     lox.init(args)
-
+    
     // https://www.geeksforgeeks.org/error-handling-compiler-design/
 }

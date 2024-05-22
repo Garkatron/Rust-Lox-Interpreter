@@ -29,12 +29,19 @@ impl Lox {
 
     // Init method
     pub fn init(&mut self, args: Vec<String>) {
-        if args.len() > 1 {
+        println!("{}", &args.len());
+        println!("Args {}", &args.join(" "));
+        println!("Args {}", args.len() == 2 && &args[1] == "-v");
+
+        if args.len() < 1 {
+            println!("Error:");
             process::exit(64);
-        } else if args.len() == 1 {
-            self.run_file(&args[0])
-        } else {
-            self.run_prompt()
+        } else if args.len() == 2 && &args[1] == "-v" {
+            println!("Running prompt");
+            self.run_prompt();
+        } else if args.len() == 2 {
+            println!("Running file");
+            self.run_file(&args[1]);
         }
     }
     fn run_file(&mut self, path: &String){
@@ -49,17 +56,20 @@ impl Lox {
 
     fn run_prompt(&mut self){
         // Clear stdout
-        let _ = io::stdout().flush();
+        println!("Clear terminal");
+        // let _ = io::stdout().flush();
 
         // Prompt loop
         loop {
+
             print!(" -> ");
 
             let mut input: String = String::new();
+
             read_line!(input);
 
             if input.is_empty() {
-                break;
+                //break;
             }
             // Exec line
             self.run(input);
@@ -74,8 +84,13 @@ impl Lox {
     fn run(&mut self, source: String){
 
         // Scanning tokens
+
+        //todo Fix it
+
         let mut scanner: Scanner = Scanner::new(source, &mut self.error_reporter);
         let tokens: Vec<Token> = scanner.scan_tokens();
+
+        //!  Here doesn't can continue, before it has an error, the program can't continue.
 
         // Printing tokens
         for token in tokens {
