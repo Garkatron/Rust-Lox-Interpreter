@@ -4,6 +4,11 @@ pub struct ErrorReporter {
 }
 impl ErrorReporter {
 
+    pub fn new() -> Self {
+        Self {
+           had_error: false
+        }
+    }
     pub fn error(&mut self, line: usize, message: String) {
         self.report(line," ".to_string(), message)
     }

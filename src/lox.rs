@@ -32,7 +32,7 @@ impl Lox {
         if args.len() > 1 {
             process::exit(64);
         } else if args.len() == 1 {
-            Self.runFile(&args[0])
+            self.run_file(&args[0])
         } else {
             self.run_prompt()
         }
@@ -58,7 +58,7 @@ impl Lox {
             let mut input: String = String::new();
             read_line!(input);
 
-            if input == None {
+            if input.is_empty() {
                 break;
             }
             // Exec line
@@ -74,7 +74,7 @@ impl Lox {
     fn run(&mut self, source: String){
 
         // Scanning tokens
-        let mut scanner: Scanner = Scanner::new(source, &self.error_reporter);
+        let mut scanner: Scanner = Scanner::new(source, &mut self.error_reporter);
         let tokens: Vec<Token> = scanner.scan_tokens();
 
         // Printing tokens

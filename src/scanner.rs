@@ -15,11 +15,11 @@ pub struct Scanner<'a> {
     current: usize,
     line: usize,
     keywords: HashMap<String, TokenType>,
-    error_reporter: &'a ErrorReporter
+    error_reporter: &'a mut ErrorReporter
 }
-impl Scanner {
+impl<'a> Scanner<'a> {
 
-    pub fn new(source: String, error_reporter: &ErrorReporter) -> Self {
+    pub fn new(source: String, error_reporter: &'a mut ErrorReporter ) -> Self {
         let mut keywords = HashMap::new();
         keywords.insert("and".to_string(),AND);
         keywords.insert("class".to_string(),CLASS);
@@ -49,14 +49,13 @@ impl Scanner {
     }
 
     pub fn scan_tokens(&mut self) -> Vec<Token> {
-        while (!self.is_at_end()) {
+        while !self.is_at_end() {
             // beginning of next lexeme
             self.start = self.current;
             self.scan_token();
         }
-        self.tokens.push(Token::from(EOF, "".to_string(), Object::None(None), self.line));
-        self.tokens.iter().cloned().collect()
-
+        self.tokens.push(Token::from(EOF, "".to_string(), Object::None, self.line));
+        self.tokens.clone()
     }
     fn is_at_end(&self) -> bool{
         self.current >= self.source.len()
@@ -83,15 +82,32 @@ impl Scanner {
             // Operators
             // Combination
 
-             '!'=> self.add_token(if self.char_match('=') { BANG_EQUAL } else { BANG }),
+            '!' => {
+                let token_type = if self.char_match('=') { BANG_EQUAL } else { BANG };
+                self.add_token(token_type);
+            },
+            '=' => {
+                let token_type = if self.char_match('=') { EQUAL_EQUAL } else { EQUAL };
+                self.add_token(token_type);
+            },
+            '<' => {
+                let token_type = if self.char_match('=') { LESS_EQUAL } else { LESS };
+                self.add_token(token_type);
+            },
+            '>' => {
+                let token_type = if self.char_match('=') { GREATER_EQUAL } else { GREATER };
+                self.add_token(token_type);
+            },
+
+             /*'!'=> self.add_token(if self.char_match('=') { BANG_EQUAL } else { BANG }),
              '='=> self.add_token(if self.char_match('=') { EQUAL_EQUAL } else { EQUAL }),
              '<'=> self.add_token(if self.char_match('=') { LESS_EQUAL } else { LESS }),
-             '>'=> self.add_token(if self.char_match('=') { GREATER_EQUAL } else { GREATER }),
+             '>'=> self.add_token(if self.char_match('=') { GREATER_EQUAL } else { GREATER }),*/
 
             '/' => {
                 if self.char_match('/') {
                     while self.peek() != '\n' && !self.is_at_end() {
-                        self.advance()
+                        self.advance();
                     }
                 } else {
                     self.add_token(SLASH)
@@ -127,6 +143,7 @@ impl Scanner {
             }
         }
     }
+
     fn identifier(&mut self) {
         while Self::is_alpha_numeric(self.peek()) {
             self.advance();
@@ -140,14 +157,14 @@ impl Scanner {
         }
     }
     fn number(&mut self) {
-        while (Self::is_digit(self.peek())) {
+        while Self::is_digit(self.peek()) {
             self.advance();
 
             // Look for a fractional part.
             if self.peek() == '.' && Self::is_digit(self.peek_next()) {
                 self.advance();
                 while Self::is_digit(self.peek()) {
-                    self.advance()
+                    self.advance();
                 }
             }
         }
@@ -163,7 +180,7 @@ impl Scanner {
             }
             if self.is_at_end() {
                 self.error_reporter.error(self.line, "Unterminated String".to_string());
-                return;
+
             }
             // The closing "
             self.advance();
@@ -175,9 +192,9 @@ impl Scanner {
         }
     }
     fn char_match(&mut self, expected: char) -> bool {
-        if self.is_at_end() ? {return false}
+        if self.is_at_end() {return false}
         let c = self.source.chars().nth(self.current).expect("Error on char_match");
-        if c != expected ? { return false }
+        if c != expected { return false }
         self.current += 1;
         true
     }
@@ -189,9 +206,9 @@ impl Scanner {
         if self.current +1 >= self.source.len() {
             return '\0'
         }
-        self.source.nth(self.current).expect("Error on peekNext");
+        self.source.chars().nth(self.current).expect("Error on peekNext")
     }
-    fn is_alpha_numberic(c: char) -> bool {
+    fn is_alpha_numeric(c: char) -> bool {
         return Self::is_alpha(c) || Self::is_digit(c);
     }
     fn is_alpha(c: char) -> bool {
@@ -207,7 +224,7 @@ impl Scanner {
         self.source.chars().nth(self.current).expect("Error on advance")
     }
     fn add_token(&mut self, t_type: TokenType) {
-        self.tokens.push(Token::from(t_type,"".to_string(),Object::None(None), 0))
+        self.tokens.push(Token::from(t_type,"".to_string(),Object::None, 0))
     }
     fn add_token_lit(&mut self, t_type: TokenType, literal: Object) {
         let text: &str = &self.source[self.start..self.current];
