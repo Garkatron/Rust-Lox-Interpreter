@@ -90,7 +90,7 @@ impl Lox {
         let mut scanner: Scanner = Scanner::new(source, &mut self.error_reporter);
         let tokens: Vec<Token> = scanner.scan_tokens();
 
-        //!  Here doesn't can continue, before it has an error, the program can't continue.
+        //  Here doesn't can continue, before it has an error, the program can't continue.
 
         // Printing tokens
         for token in tokens {

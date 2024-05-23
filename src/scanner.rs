@@ -15,7 +15,7 @@ pub struct Scanner<'a> {
     current: usize,
     line: usize,
     keywords: HashMap<String, TokenType>,
-    error_reporter: &'a mut ErrorReporter
+    error_reporter: &'a mut ErrorReporter,
 }
 impl<'a> Scanner<'a> {
 
@@ -37,6 +37,7 @@ impl<'a> Scanner<'a> {
         keywords.insert("var".to_string(),VAR);
         keywords.insert("while".to_string(),WHILE);
 
+
         Self {
             source,
             tokens: Vec::new(),
@@ -44,15 +45,17 @@ impl<'a> Scanner<'a> {
             current: 0,
             line: 1,
             keywords,
-            error_reporter
+            error_reporter,
         }
     }
 
     pub fn scan_tokens(&mut self) -> Vec<Token> {
+
         while !self.is_at_end() {
             // beginning of next lexeme
             self.start = self.current;
             self.scan_token();
+
         }
         self.tokens.push(Token::from(EOF, "".to_string(), Object::None, self.line));
         self.tokens.clone()
@@ -63,6 +66,7 @@ impl<'a> Scanner<'a> {
 
     // 4.5 -> Recognizing Lexemes
     fn scan_token(&mut self) {
+
         let c: char = self.advance();
         match c {
 
