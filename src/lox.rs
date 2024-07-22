@@ -64,7 +64,7 @@ impl Lox {
 
             print!(" -> ");
 
-            let mut input: String = String::new();
+            let input: String = String::new();
 
             read_line!(input);
 

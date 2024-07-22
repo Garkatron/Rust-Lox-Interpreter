@@ -119,12 +119,12 @@ impl<'a> Scanner<'a> {
             }
 
             // Spaces
-             ' ' => {}
+            ' '  => {}
             '\r' => {}
-             '\t' => {}
+            '\t' => {}
 
             // Newline
-             '\n' => { self.line += 1}
+            '\n' => { self.line += 1}
 
             // Longer Lexemes
             // Literals
@@ -224,8 +224,10 @@ impl<'a> Scanner<'a> {
     fn is_digit(c: char) -> bool {
         c >= '0' && c <= '9'
     }
-    fn advance(&self) -> char {
-        self.source.chars().nth(self.current).expect("Error on advance")
+    fn advance(&mut self) -> char {
+        let current_char = self.source.chars().nth(self.current).expect("Error on advance");
+        self.current += 1;
+        current_char
     }
     fn add_token(&mut self, t_type: TokenType) {
         self.tokens.push(Token::from(t_type,"".to_string(),Object::None, 0))
