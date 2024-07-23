@@ -5,6 +5,7 @@ mod token_type;
 mod token;
 mod object;
 mod error_reporter;
+mod expression;
 
 fn main() {
     // Arguments
