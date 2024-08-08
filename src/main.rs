@@ -6,6 +6,7 @@ mod token;
 mod object;
 mod error_reporter;
 mod expression;
+mod expr;
 
 fn main() {
     // Arguments
