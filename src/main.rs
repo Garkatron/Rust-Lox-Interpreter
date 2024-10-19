@@ -12,7 +12,7 @@ fn main() {
     // Arguments
     let args: Vec<String> = env::args().collect();
     let mut lox = lox::Lox::new();
-
+    
     // Initializing lox interpreter
     lox.init(args)
     
