@@ -77,6 +77,7 @@ impl<'a> Scanner<'a> {
 
             // Recognizing Lexemes
             // Normal lexemes
+            
             '(' => self.add_token(LEFT_PAREN),
             ')' => self.add_token(RIGHT_PAREN),
             '{' => self.add_token(LEFT_BRACE),
@@ -108,13 +109,27 @@ impl<'a> Scanner<'a> {
                 self.add_token(token_type);
             },
 
-             /*'!'=> self.add_token(if self.char_match('=') { BANG_EQUAL } else { BANG }),
-             '='=> self.add_token(if self.char_match('=') { EQUAL_EQUAL } else { EQUAL }),
-             '<'=> self.add_token(if self.char_match('=') { LESS_EQUAL } else { LESS }),
-             '>'=> self.add_token(if self.char_match('=') { GREATER_EQUAL } else { GREATER }),*/
-
+            /*
+            '!'=> self.add_token(if self.char_match('=') { BANG_EQUAL } else { BANG }),
+            '='=> self.add_token(if self.char_match('=') { EQUAL_EQUAL } else { EQUAL }),
+            '<'=> self.add_token(if self.char_match('=') { LESS_EQUAL } else { LESS }),
+            '>'=> self.add_token(if self.char_match('=') { GREATER_EQUAL } else { GREATER }),
+            */
+            
             '/' => {
-                if self.char_match('/') {
+                if self.char_match('*') {
+                    // Code for handle multiline comment
+                    while !self.is_at_end()  {            
+                        if self.peek() == '\n' {
+                            self.line += 1;
+                        } else if self.peek() == '*' && self.peek_next() == '/' {
+                            self.current += 2; // Skip two characters if they form the closing of a multiline comment
+                            return; // Finish
+                        }
+                        self.advance();
+                    }
+                    self.error_reporter.error(self.line,"Unfinished multiline comment.".to_string())                                        
+                } else if self.char_match('/') {
                     while self.peek() != '\n' && !self.is_at_end() {
                         self.advance();
                     }
@@ -138,7 +153,6 @@ impl<'a> Scanner<'a> {
             }
 
             // Default
-
             _ => {
                 // Number literals
                 if Self::is_digit(c) {
@@ -213,7 +227,7 @@ impl<'a> Scanner<'a> {
         if self.current + 1 >= self.source.len() {
             return '\0'
         }
-        self.source.chars().nth(self.current).expect("Error on peek_next")
+        self.source.chars().nth(self.current + 1).expect("Error on peek_next")
     }
     
     fn is_alpha_numeric(c: char) -> bool {
