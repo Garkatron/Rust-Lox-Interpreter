@@ -5,8 +5,8 @@ mod token_type;
 mod token;
 mod object;
 mod error_reporter;
-mod expression;
 mod expr;
+mod ast_printer;
 
 fn main() {
     // Arguments

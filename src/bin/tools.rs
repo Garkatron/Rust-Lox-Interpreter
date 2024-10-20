@@ -1,107 +1,106 @@
 use std::env;
-use std::fs::File;
-use std::io::{BufWriter, Write, Result};
-use std::path::PathBuf;
-use std::process;
+use std::fs::{File, create_dir_all};
+use std::io::{self, Write};
+use std::path::Path;
 
-fn main() {
+fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
-
-    // Print the arguments for debugging
-    println!("Arguments: {:?}", args);
-
-    // Check if exactly one argument (output_dir) is provided
-    if args.len() != 2 {
-        eprintln!("Usage: {} <output_dir>", args[0]);
-        process::exit(64);
-    }
     
+    if args.len() != 2 {
+        eprintln!("Usage: generate_ast <output directory>");
+        std::process::exit(64);
+    }
+
     let output_dir = &args[1];
 
-    if let Err(e) = define_ast(output_dir, "Expr".to_string(), vec![
-        "Binary   : Expr left, Token operator, Expr right".to_string(),
-        "Grouping : Expr expression".to_string(),
-        "Literal  : Object value".to_string(),
-        "Unary    : Token operator, Expr right".to_string(),
-    ]) {
-        eprintln!("Error: {}", e);
-        process::exit(1);
-    }
+    // Asegúrate de que el directorio de salida existe
+    create_dir_all(output_dir)?;
+
+    define_ast(output_dir, "Expression", vec![
+        "Binary   : Expr left, Token operator, Expr right",
+        "Grouping : Expr expression",
+        "Literal  : Any value",
+        "Unary    : Token operator, Expr right",
+    ])?;
+
+    Ok(())
 }
 
-fn define_ast(output_dir: &str, base_name: String, types: Vec<String>) -> Result<()> {
-    let path = PathBuf::from(output_dir).join(format!("{}.rs", base_name));
-    let file = File::create(&path)?;
-    let mut writer = BufWriter::new(file);
+fn define_ast(output_dir: &str, base_name: &str, types: Vec<&str>) -> io::Result<()> {
+    let path = Path::new(output_dir).join(format!("{}.rs", base_name.to_lowercase()));
+    let mut file = File::create(&path)?; // Verifica si hay error al crear el archivo
+
+    writeln!(file, "pub mod {} {{", base_name.to_lowercase())?;
+    writeln!(file, "    use super::Token;")?;
+    writeln!(file, "    use std::any::Any;")?; // Importar Any para su uso
+    writeln!(file, "    pub enum {} {{", base_name)?;
+
+    for type_def in &types {
+        let parts: Vec<&str> = type_def.split(':').collect();
+        let class_name = parts[0].trim();
+        let fields = parts[1].trim();
+        define_type(&mut file, base_name, class_name, fields)?;
+    }
+
+    writeln!(file, "    }}")?; // Cierra el enum
+
+    // Definición del Visitor
+    define_visitor(&mut file, base_name, types)?;
+
+    writeln!(file, "}}")?; // Cierra el módulo
+
+    Ok(())
+}
+
+fn define_type(file: &mut File, base_name: &str, class_name: &str, field_list: &str) -> io::Result<()> {
+    writeln!(file, "        {} {{", class_name)?;
     
-    writeln!(writer, "// This file is generated automatically")?;
-    writeln!(writer, "")?;
-    writeln!(writer, "pub trait {} {{", base_name)?;
-    writeln!(writer, "}}")?;
-    writeln!(writer, "")?;
-
-    // The AST classes.
-    for type_str in types {
-        let parts: Vec<&str> = type_str.split(':').map(str::trim).collect();
-        if parts.len() != 2 {
-            eprintln!("Invalid type format: {}", type_str);
-            continue;
-        }
-        let class_name = parts[0];
-        let fields = parts[1];
-        if let Err(e) = define_type(&mut writer, &base_name, class_name, fields) {
-            eprintln!("Error defining type {}: {}", class_name, e);
-            continue;
-        }
+    let fields: Vec<&str> = field_list.split(',').collect();
+    for field in &fields {
+        let field_parts: Vec<&str> = field.trim().split_whitespace().collect();
+        let field_type = field_parts[0];
+        let field_name = field_parts[1];
+        writeln!(file, "            {}: {},", field_name, map_type(field_type))?;        
     }
+
+    writeln!(file, "        }},")?; // Cierra la variante de la estructura
+    Ok(())
+}
+
+// Genera la definición del Visitor
+fn define_visitor(file: &mut File, base_name: &str, types: Vec<&str>) -> io::Result<()> {
+    writeln!(file, "    pub trait Visitor<R> {{")?;
+
+    for type_def in &types {
+        let class_name = type_def.split(':').next().unwrap().trim();
+        writeln!(file, "        fn visit_{}(&self, expr: &{}) -> R;", class_name.to_lowercase(), class_name)?;
+    }
+
+    writeln!(file, "    }}")?; // Cierra el trait
+
+    // Método accept para el enum
+    writeln!(file, "    impl {} {{", base_name)?;
+    writeln!(file, "        pub fn accept<R>(&self, visitor: &dyn Visitor<R>) -> R {{")?;
+    writeln!(file, "            match self {{")?;
+
+    for type_def in &types {
+        let class_name = type_def.split(':').next().unwrap().trim();
+        writeln!(file, "                {}::{} {{..}} => visitor.visit_{}(self),", base_name, class_name, class_name.to_lowercase())?;
+    }
+
+    writeln!(file, "            }}")?;
+    writeln!(file, "        }}")?;
+    writeln!(file, "    }}")?; // Cierra la implementación
 
     Ok(())
 }
 
-fn define_type(
-    writer: &mut BufWriter<File>,
-    _base_name: &str, // Renamed parameter to _base_name to silence the warning
-    class_name: &str,
-    field_list: &str
-) -> Result<()> {
-    // Write the struct definition
-    writeln!(writer, "pub struct {} {{", class_name)?;
-
-    // Write the fields
-    let fields: Vec<&str> = field_list.split(',').map(str::trim).collect();
-    for field in &fields {
-        let parts: Vec<&str> = field.split_whitespace().collect();
-        if parts.len() != 2 {
-            eprintln!("Invalid field format: {}", field);
-            return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid field format"));
-        }
-        let field_type = parts[0];
-        let field_name = parts[1];
-        writeln!(writer, "    pub {}: {},", field_name, field_type)?;
+// Mapea tipos de Java a tipos de Rust
+fn map_type(java_type: &str) -> &str {
+    match java_type {
+        "Expr" => "Box<Expr>",    // Tipo recursivo, normalmente Boxeado en Rust
+        "Token" => "Token",
+        "Any" => "Box<dyn Any>",  // Cambia Object por Box<dyn Any>
+        _ => java_type,           // Usa el mismo nombre de tipo si no se necesita mapeo especial
     }
-
-    writeln!(writer, "}}")?;
-
-    // Write the implementation block for the struct
-    writeln!(writer, "")?;
-    writeln!(writer, "impl {} {{", class_name)?;
-
-    // Write the constructor (equivalent) function
-    writeln!(writer, "    pub fn new({}) -> Self {{", field_list)?;
-
-    // Initialize the struct fields
-    for field in &fields {
-        let parts: Vec<&str> = field.split_whitespace().collect();
-        if parts.len() != 2 {
-            eprintln!("Invalid field format: {}", field);
-            return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid field format"));
-        }
-        let field_name = parts[1];
-        writeln!(writer, "        {}: {},", field_name, field_name)?;
-    }
-
-    writeln!(writer, "    }}")?;
-    writeln!(writer, "}}")?;
-
-    Ok(())
 }

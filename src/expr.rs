@@ -1,61 +1,55 @@
+// Suponiendo que Token es una enumeración ya definida en tu código
+use std::any::Any;
 use crate::token::Token;
-use crate::object::Object;
 
-pub trait Expr {
-    // You can add method signatures here, for example:
-    // fn accept(&self, visitor: &mut dyn Visitor) -> Result<(), String>;
-}
+// Módulo `expression`
+pub mod expression {
+    use super::Token; // Asegúrate de que Token esté definido
+    use std::any::Any;
 
-// Binary expression
-pub struct Binary {
-    pub left: Box<dyn Expr>,
-    pub operator: Token,
-    pub right: Box<dyn Expr>,
-}
-
-impl Binary {
-    pub fn new(left: Box<dyn Expr>, operator: Token, right: Box<dyn Expr>) -> Self {
-        Self {
-            left,
-            operator,
-            right,
-        }
+    pub enum Expr {
+        Binary(Binary),
+        Grouping(Grouping),
+        Literal(Literal),
+        Unary(Unary),
     }
-}
 
-// Grouping expression
-pub struct Grouping {
-    pub expression: Box<dyn Expr>,
-}
-
-impl Grouping {
-    pub fn new(expression: Box<dyn Expr>) -> Self {
-        Self { expression }
+    pub struct Binary {
+        pub left: Box<Expr>,
+        pub operator: Token,
+        pub right: Box<Expr>,
+        pub lexeme: String,
     }
-}
 
-// Literal expression
-pub struct Literal {
-    pub value: Object,
-}
-
-impl Literal {
-    pub fn new(value: Object) -> Self {
-        Self { value }
+    pub struct Grouping {
+        pub expression: Box<Expr>,
     }
-}
 
-// Unary expression
-pub struct Unary {
-    pub operator: Token,
-    pub right: Box<dyn Expr>,
-}
+    pub struct Literal {
+        pub value: Box<dyn Any>,
+    }
 
-impl Unary {
-    pub fn new(operator: Token, right: Box<dyn Expr>) -> Self {
-        Self { 
-            operator, 
-            right 
+    pub struct Unary {
+        pub operator: Token,
+        pub right: Box<Expr>,
+        pub lexeme: String,        
+    }
+
+    pub trait Visitor<R> {
+        fn visit_binary(&self, expr: &Binary) -> R;
+        fn visit_grouping(&self, expr: &Grouping) -> R;
+        fn visit_literal(&self, expr: &Literal) -> R;
+        fn visit_unary(&self, expr: &Unary) -> R;
+    }
+
+    impl Expr {
+        pub fn accept<R>(&self, visitor: &dyn Visitor<R>) -> R {
+            match self {
+                Expr::Binary(expr) => visitor.visit_binary(expr),
+                Expr::Grouping(expr) => visitor.visit_grouping(expr),
+                Expr::Literal(expr) => visitor.visit_literal(expr),
+                Expr::Unary(expr) => visitor.visit_unary(expr),
+            }
         }
     }
 }
