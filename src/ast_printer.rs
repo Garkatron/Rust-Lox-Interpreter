@@ -34,9 +34,7 @@ impl expression::Visitor<String> for AstPrinter {
 impl AstPrinter {
     
     pub fn new() -> AstPrinter {
-        Self {
-            
-        }
+        Self {}
     }
     
     pub fn print(&self, expr: Expr) -> String {
