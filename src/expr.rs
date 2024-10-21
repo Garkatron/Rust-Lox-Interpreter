@@ -6,14 +6,16 @@ use crate::token::Token;
 pub mod expression {
     use super::Token; // Asegúrate de que Token esté definido
     use std::any::Any;
-
+    
+    #[derive(Clone)]
     pub enum Expr {
         Binary(Binary),
         Grouping(Grouping),
         Literal(Literal),
         Unary(Unary),
     }
-
+    
+    #[derive(Clone)]
     pub struct Binary {
         pub left: Box<Expr>,
         pub operator: Token,
@@ -21,20 +23,33 @@ pub mod expression {
         pub lexeme: String,
     }
 
+    #[derive(Clone)]    
     pub struct Grouping {
         pub expression: Box<Expr>,
     }
 
+    #[derive(Clone)]    
     pub struct Literal {
-        pub value: Box<dyn Any>,
+        pub value: LiteralValue,
     }
 
+    #[derive(Clone)]
     pub struct Unary {
         pub operator: Token,
         pub right: Box<Expr>,
         pub lexeme: String,        
     }
 
+    #[derive(Debug)]
+    #[derive(Clone)]
+    pub enum LiteralValue {
+        Number(f64),
+        String(String),
+        Boolean(bool),
+        Nil,
+    }
+    
+    
     pub trait Visitor<R> {
         fn visit_binary(&self, expr: &Binary) -> R;
         fn visit_grouping(&self, expr: &Grouping) -> R;

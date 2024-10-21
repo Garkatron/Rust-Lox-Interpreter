@@ -2,6 +2,7 @@ use std::cmp::PartialEq;
 use std::collections::HashMap;
 use std::error::Error;
 use crate::error_reporter::ErrorReporter;
+use crate::expr::expression::LiteralValue;
 use crate::lox::Lox;
 use crate::object::Object;
 use crate::token::Token;
@@ -59,7 +60,7 @@ impl<'a> Scanner<'a> {
             self.scan_token();
 
         }
-        self.tokens.push(Token::from(EOF, "".to_string(), Object::None, self.line));
+        self.tokens.push(Token::from(EOF, "".to_string(), LiteralValue::Nil, self.line));
         
         // Return tokens
         self.tokens.clone()
@@ -184,7 +185,7 @@ impl<'a> Scanner<'a> {
             self.advance();
             while Self::is_digit(self.peek()) {self.advance();}
         }      
-        self.add_token_lit(NUMBER,Object::Number(self.source[self.start..self.current].parse().unwrap()))
+        self.add_token_lit(NUMBER,LiteralValue::Number(self.source[self.start..self.current].parse().unwrap()))
     }
 
     fn string(&mut self) {
@@ -206,7 +207,7 @@ impl<'a> Scanner<'a> {
 
         // Trim the surrounding quotes.
         let value: String = self.source[self.start+1..self.current-1].to_string();
-        self.add_token_lit(STRING, Object::String(value))
+        self.add_token_lit(STRING, LiteralValue::String(value))
 
     }
     
@@ -251,10 +252,10 @@ impl<'a> Scanner<'a> {
     }
     
     fn add_token(&mut self, t_type: TokenType) {
-        self.tokens.push(Token::from(t_type,"".to_string(),Object::None, 0))
+        self.tokens.push(Token::from(t_type,"".to_string(),LiteralValue::Nil, 0))
     }
     
-    fn add_token_lit(&mut self, t_type: TokenType, literal: Object) {
+    fn add_token_lit(&mut self, t_type: TokenType, literal: LiteralValue) {
         let text: &str = &self.source[self.start..self.current];
         self.tokens.push(Token::from(t_type,text.to_string(), literal, self.line))
     }
