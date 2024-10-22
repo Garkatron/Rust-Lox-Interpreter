@@ -1,7 +1,7 @@
-
 pub struct ErrorReporter {
     had_error: bool
 }
+
 impl ErrorReporter {
 
     pub fn new() -> Self {

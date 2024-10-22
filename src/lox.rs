@@ -1,29 +1,30 @@
-use std::{fs, io, process};
-use std::io::{stdin, Write};
-use std::path::{Path, PathBuf};
 use crate::error_reporter::ErrorReporter;
 use crate::scanner::Scanner;
 use crate::token::Token;
+use std::io::Write;
+use std::path::PathBuf;
+use std::{fs, io, process};
 
 // Macros
 macro_rules! read_line {
     ($input:ident) => {
         let mut $input = String::new();
-        io::stdin().read_line(&mut $input).expect("Error on read line");
+        io::stdin()
+            .read_line(&mut $input)
+            .expect("Error on read line");
     };
 }
 
 // Lox
 pub struct Lox {
-    error_reporter: ErrorReporter
+    error_reporter: ErrorReporter,
 }
 
 //pub static mut had_error: bool = false;
 impl Lox {
-
     pub fn new() -> Self {
         Self {
-            error_reporter: ErrorReporter::new()
+            error_reporter: ErrorReporter::new(),
         }
     }
 
@@ -44,7 +45,7 @@ impl Lox {
             self.run_file(&args[1]);
         }
     }
-    fn run_file(&mut self, path: &String){
+    fn run_file(&mut self, path: &String) {
         let file = PathBuf::from(path);
         let content = fs::read_to_string(file);
         if let Ok(ok_content) = content {
@@ -54,13 +55,13 @@ impl Lox {
         }
     }
 
-    fn run_prompt(&mut self){
+    fn run_prompt(&mut self) {
         // Clear stdout
         println!("Clear terminal");
         // let _ = io::stdout().flush();
         // Flush out
         std::io::stdout().flush().unwrap();
-        
+
         // Prompt loop
         loop {
             print!(" -> ");
@@ -72,21 +73,19 @@ impl Lox {
             if _input.trim().is_empty() {
                 break;
             }
-            
+
             println!("Ejecutando: {}", _input.trim());
-            
+
             // Exec line
             self.run(_input);
 
             // Reset error
             // had_error = false;
             self.error_reporter.reset()
-
         }
     }
 
-    fn run(&mut self, source: String){
-
+    fn run(&mut self, source: String) {
         // Scanning tokens
 
         // TODO: Fix it
@@ -100,10 +99,5 @@ impl Lox {
         for token in tokens {
             println!("{}", token);
         }
-
     }
-
-
-
-
 }

@@ -39,7 +39,7 @@ fn define_ast(output_dir: &str, base_name: &str, types: Vec<&str>) -> io::Result
         let parts: Vec<&str> = type_def.split(':').collect();
         let class_name = parts[0].trim();
         let fields = parts[1].trim();
-        define_type(&mut file, base_name, class_name, fields)?;
+        define_type(&mut file, class_name, fields)?;
     }
 
     writeln!(file, "    }}")?; // Cierra el enum
@@ -52,7 +52,8 @@ fn define_ast(output_dir: &str, base_name: &str, types: Vec<&str>) -> io::Result
     Ok(())
 }
 
-fn define_type(file: &mut File, base_name: &str, class_name: &str, field_list: &str) -> io::Result<()> {
+// base_name: &str
+fn define_type(file: &mut File, class_name: &str, field_list: &str) -> io::Result<()> {
     writeln!(file, "        {} {{", class_name)?;
     
     let fields: Vec<&str> = field_list.split(',').collect();

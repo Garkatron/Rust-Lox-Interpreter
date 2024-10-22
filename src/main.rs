@@ -1,45 +1,54 @@
 use std::env;
-mod lox;
-mod scanner;
-mod token_type;
-mod token;
-mod object;
-mod error_reporter;
-mod expr;
-mod ast_printer;
-use crate::expr::expression::{self, Expr, LiteralValue, Unary, Grouping, Binary, Literal};
-use crate::ast_printer::AstPrinter;
-use crate::token::{Token};
-use crate::token_type::TokenType;  
-/*
-fn main() {
+
+use ast_utils::{ast_printer::AstPrinter, ast_rpn::AstRpn};
+use expression::{Binary, Expr, Grouping, Literal, LiteralValue, Unary};
+use lox::Lox;
+use token::Token;
+use token_type::TokenType;
+#[warn(unused_imports)]
+pub mod lox;
+pub mod scanner;
+pub mod token_type;
+pub mod token;
+pub mod error_reporter;
+pub mod expression;
+pub mod ast_utils;
+
+/*fn main() {
     // Arguments
     let args: Vec<String> = env::args().collect();
-    let mut lox = lox::Lox::new();
+    let mut lox = Lox::new();
     
     // Initializing lox interpreter
-    lox.init(args)
+    lox.init(args);
     
     // https://www.geeksforgeeks.org/error-handling-compiler-design/
-}*/
+}
+    */
+
 fn main() {
     // Creamos un nuevo `AstPrinter`
-    let printer = AstPrinter::new();
+    let printer = AstRpn::new();
 
-    // Creamos la expresión: (-123) * (45.67)
+    // Creamos la expresión: (1 + 2) * (4 - 3)
     let expression = Expr::Binary(Binary {
-        lexeme: "test".to_string(),        
-        left: Box::new(Expr::Unary(Unary {
-            operator: Token {
-                t_type: TokenType::MINUS,
-                lexeme: "-".to_string(),
-                literal: LiteralValue::Nil,
-                line: 1,
-            },
-            right: Box::new(Expr::Literal(Literal {
-                value: LiteralValue::Number(123.0),
+        lexeme: "test".to_string(),
+        left: Box::new(Expr::Grouping(Grouping {
+            expression: Box::new(Expr::Binary(Binary {
+                lexeme: "test".to_string(),
+                left: Box::new(Expr::Literal(Literal {
+                    value: LiteralValue::Number(1.0),
+                })),
+                operator: Token {
+                    t_type: TokenType::PLUS,
+                    lexeme: "+".to_string(),
+                    literal: LiteralValue::Nil,
+                    line: 1,
+                },
+                right: Box::new(Expr::Literal(Literal {
+                    value: LiteralValue::Number(2.0),
+                })),
             })),
-            lexeme: "test".to_string()
         })),
         operator: Token {
             t_type: TokenType::STAR,
@@ -48,8 +57,20 @@ fn main() {
             line: 1,
         },
         right: Box::new(Expr::Grouping(Grouping {
-            expression: Box::new(Expr::Literal(Literal {
-                value: LiteralValue::Number(45.67),
+            expression: Box::new(Expr::Binary(Binary {
+                lexeme: "test".to_string(),
+                left: Box::new(Expr::Literal(Literal {
+                    value: LiteralValue::Number(4.0),
+                })),
+                operator: Token {
+                    t_type: TokenType::MINUS,
+                    lexeme: "-".to_string(),
+                    literal: LiteralValue::Nil,
+                    line: 1,
+                },
+                right: Box::new(Expr::Literal(Literal {
+                    value: LiteralValue::Number(3.0),
+                })),
             })),
         })),
     });

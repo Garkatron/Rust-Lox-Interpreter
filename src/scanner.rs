@@ -1,10 +1,6 @@
-use std::cmp::PartialEq;
 use std::collections::HashMap;
-use std::error::Error;
 use crate::error_reporter::ErrorReporter;
-use crate::expr::expression::LiteralValue;
-use crate::lox::Lox;
-use crate::object::Object;
+use crate::expression::LiteralValue;
 use crate::token::Token;
 use crate::token_type::TokenType;
 use crate::token_type::TokenType::*;

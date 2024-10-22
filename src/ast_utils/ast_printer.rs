@@ -1,32 +1,28 @@
-use std::fmt::Binary;
-
-use crate::{expr::expression::{self, Expr, LiteralValue}, token::Token, token_type::TokenType};
+use crate::expression::{Unary, Binary, Visitor, LiteralValue, Literal, Grouping, Expr};
 
 pub struct AstPrinter;
-
-
-impl expression::Visitor<String> for AstPrinter {
+impl Visitor<String> for AstPrinter {
     
-    fn visit_unary(&self, expr: &expression::Unary) -> String {
+    fn visit_unary(&self, expr: &Unary) -> String {
         let c_expr = expr.clone();
         
         self.parenthesize(c_expr.operator.lexeme, &[&*c_expr.right])
     }
-    fn visit_binary(&self, expr: &expression::Binary) -> String {
+    fn visit_binary(&self, expr: &Binary) -> String {
         let c_expr = expr.clone();        
         self.parenthesize(c_expr.operator.lexeme, &[&*c_expr.left,&*c_expr.right])    
     }
-    fn visit_literal(&self, expr: &expression::Literal) -> String {
+    fn visit_literal(&self, expr: &Literal) -> String {
        
        match &expr.value {
-            expression::LiteralValue::Nil => "nil".to_string(),
-            expression::LiteralValue::Number(n) => n.to_string(),
-            expression::LiteralValue::String(s) => s.clone(),
-            expression::LiteralValue::Boolean(b) => b.to_string(),
+            LiteralValue::Nil => "nil".to_string(),
+            LiteralValue::Number(n) => n.to_string(),
+            LiteralValue::String(s) => s.clone(),
+            LiteralValue::Boolean(b) => b.to_string(),
        }
     }
        
-    fn visit_grouping(&self, expr: &expression::Grouping) -> String {
+    fn visit_grouping(&self, expr: &Grouping) -> String {
         return self.parenthesize("group".to_string(), &[&*expr.expression]);
     }
 }
