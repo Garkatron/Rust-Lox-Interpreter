@@ -13,6 +13,7 @@ pub mod token;
 pub mod error_reporter;
 pub mod expression;
 pub mod ast_utils;
+pub mod parser;
 
 /*fn main() {
     // Arguments

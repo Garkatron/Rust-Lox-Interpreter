@@ -36,18 +36,19 @@ impl AstPrinter {
     pub fn print(&self, expr: Expr) -> String {
         return expr.accept(self);
     }
-    
-    fn parenthesize(&self, name: String, expression: &[&Expr]) -> String{
+
+    fn parenthesize(&self, name: impl Into<String>, expression: &[&Expr]) -> String {
         let mut text: String = "(".to_string();
-        text += &name;
-        for expr  in expression {
+        let namestr: String = name.into();
+        text += &namestr;
+        for expr in expression {
             text += " ";
-            text += &expr.accept(self)
+            text += &expr.accept(self); 
         }
         text += ")";
-        
         text
     }
+    
     
 }
 
