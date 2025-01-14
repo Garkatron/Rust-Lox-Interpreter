@@ -17,6 +17,7 @@ pub struct Scanner<'a> {
     keywords: HashMap<String, TokenType>,
     error_reporter: &'a mut ErrorReporter,
 }
+
 impl<'a> Scanner<'a> {
 
     pub fn new(source: String, error_reporter: &'a mut ErrorReporter ) -> Self {

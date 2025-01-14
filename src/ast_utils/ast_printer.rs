@@ -1,18 +1,20 @@
-use crate::expression::{Unary, Binary, Visitor, LiteralValue, Literal, Grouping, Expr};
+use crate::expression::Expr;
+use crate::expression::Visitor;
+use crate::LiteralValue;
 
 pub struct AstPrinter;
 impl Visitor<String> for AstPrinter {
     
-    fn visit_unary(&self, expr: &Unary) -> String {
+    fn visit_unary(&self, expr: &Expr) -> String {
         let c_expr = expr.clone();
         
         self.parenthesize(c_expr.operator.lexeme, &[&*c_expr.right])
     }
-    fn visit_binary(&self, expr: &Binary) -> String {
+    fn visit_binary(&self, expr: &Expr) -> String {
         let c_expr = expr.clone();        
         self.parenthesize(c_expr.operator.lexeme, &[&*c_expr.left,&*c_expr.right])    
     }
-    fn visit_literal(&self, expr: &Literal) -> String {
+    fn visit_literal(&self, expr: &Expr) -> String {
        
        match &expr.value {
             LiteralValue::Nil => "nil".to_string(),

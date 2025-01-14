@@ -10,6 +10,7 @@ pub struct Token {
     pub literal: LiteralValue,
     pub line: usize
 }
+
 impl Token {
     pub fn new(t_type: TokenType, lexeme: String, literal: LiteralValue, line: usize) -> Token {
         Token{

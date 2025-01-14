@@ -1,39 +1,38 @@
 // Reverse Polish Notation
 
-use crate::expression::{Binary, Expr, Grouping, Literal, LiteralValue, Unary, Visitor};
+use crate::expression::{Expr, LiteralValue, Visitor};
 
 pub struct AstRpn;
+
 impl Visitor<String> for AstRpn {
-    
-    fn visit_unary(&self, expr: &Unary) -> String {
-        return format!("{} {}", expr.right.accept(self), expr.operator.lexeme);
+    fn visit_unary(&self, operator: &crate::token::Token, right: &Expr, lexeme: &String) -> String {
+        format!("{} {}", right.accept(self), lexeme)
     }
-    fn visit_binary(&self, expr: &Binary) -> String {
-        return format!("{} {} {}", expr.left.accept(self), expr.right.accept(self), expr.operator.lexeme);    
+
+    fn visit_binary(&self, left: &Expr, operator: &crate::token::Token, right: &Expr, lexeme: &String) -> String {
+        format!("{} {} {}", left.accept(self), right.accept(self), lexeme)
     }
-    fn visit_literal(&self, expr: &Literal) -> String {
-       
-       match &expr.value {
+
+    fn visit_literal(&self, value: &LiteralValue) -> String {
+        match value {
             LiteralValue::Nil => "nil".to_string(),
             LiteralValue::Number(n) => n.to_string(),
             LiteralValue::String(s) => s.clone(),
             LiteralValue::Boolean(b) => b.to_string(),
-       }
+        }
     }
-       
-    fn visit_grouping(&self, expr: &Grouping) -> String {
-        return expr.expression.accept(self);
+
+    fn visit_grouping(&self, expression: &Expr) -> String {
+        expression.accept(self)
     }
 }
 
 impl AstRpn {
-    
     pub fn new() -> AstRpn {
         Self {}
     }
-    
-    pub fn print(&self, expr: Expr) -> String {
-        return expr.accept(self);
+
+    pub fn print(&self, expr: &Expr) -> String {
+        expr.accept(self)
     }
 }
-
