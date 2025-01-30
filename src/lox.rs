@@ -93,6 +93,10 @@ impl Lox {
     
         let mut parser = Parser::new(tokens.clone(), &mut self.error_reporter);
         
+        for token in tokens.clone() {
+            println!("{}",token);
+        }
+
         match parser.parse() {
             Ok(expr) => {
                 if self.error_reporter.had_error {
