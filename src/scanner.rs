@@ -249,12 +249,13 @@ impl<'a> Scanner<'a> {
     }
     
     fn add_token(&mut self, t_type: TokenType) {
-        self.tokens.push(Token::from(t_type,"".to_string(),LiteralValue::Nil, 0))
+        let lexeme = self.source[self.start..self.current].to_string();
+        self.tokens.push(Token::from(t_type, lexeme, LiteralValue::Nil, self.line));
     }
     
     fn add_token_lit(&mut self, t_type: TokenType, literal: LiteralValue) {
-        let text: &str = &self.source[self.start..self.current];
-        self.tokens.push(Token::from(t_type,text.to_string(), literal, self.line))
+        let lexeme = self.source[self.start..self.current].to_string();
+        self.tokens.push(Token::from(t_type, lexeme, literal, self.line));
     }
 
 

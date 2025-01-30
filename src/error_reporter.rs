@@ -1,5 +1,7 @@
+use crate::{token::Token, token_type::TokenType};
+
 pub struct ErrorReporter {
-    had_error: bool
+    pub had_error: bool
 }
 
 impl ErrorReporter {
@@ -16,6 +18,14 @@ impl ErrorReporter {
     fn report(&mut self, line: usize, where_is: String, message: String){
         println!("Error {} at line {}\nMessage: {} ", where_is, line, message);
         self.had_error = true;
+    }
+
+    pub fn token_error(&mut self, token: Token, message: String) {
+        if token.t_type == TokenType::EOF {
+            self.report(token.line, " at end".to_owned(), message);
+        } else {
+            self.report(token.line, format!(" at ' {} '", token.lexeme) , message);
+        }
     }
 
     pub fn reset(&mut self) {

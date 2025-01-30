@@ -5,11 +5,11 @@ use crate::expression::{Expr, LiteralValue, Visitor};
 pub struct AstRpn;
 
 impl Visitor<String> for AstRpn {
-    fn visit_unary(&self, operator: &crate::token::Token, right: &Expr, lexeme: &String) -> String {
+    fn visit_unary(&self, _operator: &crate::token::Token, right: &Expr, lexeme: &String) -> String {
         format!("{} {}", right.accept(self), lexeme)
     }
 
-    fn visit_binary(&self, left: &Expr, operator: &crate::token::Token, right: &Expr, lexeme: &String) -> String {
+    fn visit_binary(&self, left: &Expr, _operator: &crate::token::Token, right: &Expr, lexeme: &String) -> String {
         format!("{} {} {}", left.accept(self), right.accept(self), lexeme)
     }
 
@@ -32,7 +32,7 @@ impl AstRpn {
         Self {}
     }
 
-    pub fn print(&self, expr: &Expr) -> String {
+    pub fn print(&self, expr: Expr) -> String {
         expr.accept(self)
     }
 }

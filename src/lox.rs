@@ -1,4 +1,6 @@
+use crate::ast_utils::ast_printer::AstPrinter;
 use crate::error_reporter::ErrorReporter;
+use crate::parser::Parser;
 use crate::scanner::Scanner;
 use crate::token::Token;
 use std::io::Write;
@@ -86,18 +88,23 @@ impl Lox {
     }
 
     fn run(&mut self, source: String) {
-        // Scanning tokens
-
-        // TODO: Fix it
-
         let mut scanner: Scanner = Scanner::new(source, &mut self.error_reporter);
         let tokens: Vec<Token> = scanner.scan_tokens();
-
-        // Here doesn't can continue, before it has an error, the program can't continue.
-
-        // Printing tokens
-        for token in tokens {
-            println!("{}", token);
+    
+        let mut parser = Parser::new(tokens.clone(), &mut self.error_reporter);
+        
+        match parser.parse() {
+            Ok(expr) => {
+                if self.error_reporter.had_error {
+                    return;
+                }
+    
+                println!("{}", AstPrinter::new().print(expr.clone()));
+            }
+            Err(e) => {
+                eprintln!("Error parsing expr: {:?}", e);
+            }
         }
     }
+    
 }

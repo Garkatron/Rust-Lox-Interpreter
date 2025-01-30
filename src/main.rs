@@ -1,22 +1,19 @@
-use std::env;
-
+#[warn(unused_imports)]
 use crate::expression::LiteralValue;
-use ast_utils::{ast_printer::AstPrinter, ast_rpn::AstRpn};
-use expression::Expr;
 use lox::Lox;
 use token::Token;
 use token_type::TokenType;
-
+use std::env;
 pub mod ast_utils;
 pub mod error_reporter;
 pub mod expression;
-#[warn(unused_imports)]
 pub mod lox;
 pub mod parser;
 pub mod scanner;
 pub mod token;
 pub mod token_type;
-
+pub mod parse_error;
+pub mod scanner_error;
 /*fn main() {
     // Arguments
     let args: Vec<String> = env::args().collect();
@@ -30,7 +27,15 @@ pub mod token_type;
     */
 
 fn main() {
-    // Creamos un nuevo `AstRpn` (asumiendo que existe una implementación)
+    let args: Vec<String> = env::args().collect();
+    let mut lox = Lox::new();
+    lox.init(args);
+}
+
+/*
+
+
+// Creamos un nuevo `AstRpn` (asumiendo que existe una implementación)
     let printer = AstRpn::new();
 
     // Creamos la expresión: (1 + 2) * (4 - 3)
@@ -78,7 +83,9 @@ fn main() {
         }),
     };
 
-    // Asumiendo que `AstRpn` tiene un método para procesar y mostrar la expresión
     let result = printer.print(&expression);
     println!("{}", result);
-}
+    
+
+
+*/
