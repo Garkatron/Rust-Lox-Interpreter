@@ -1,5 +1,7 @@
 // Reverse Polish Notation
 
+use std::fmt::format;
+
 use crate::expression::{Expr, LiteralValue, Visitor};
 
 pub struct AstRpn;
@@ -28,6 +30,12 @@ impl Visitor<String> for AstRpn {
 
     fn visit_comma(&self, left: &Expr, right: &Expr) -> String {
         format!("{} {}", left.accept(self), right.accept(self))
+    }
+
+    
+    fn visit_ternary(&self, condition: &Expr, then_branch: &Expr, else_branch: &Expr) -> String {
+       format!("({}) ? {} : {}", condition.accept(self), then_branch.accept(self), else_branch.accept(self))
+
     }
 }
 

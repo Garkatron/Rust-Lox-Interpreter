@@ -29,6 +29,10 @@ impl Visitor<String> for AstPrinter {
     fn visit_comma(&self, left: &Expr, right: &Expr) -> String {
         self.parenthesize("comma", &[left, right])
     }
+
+    fn visit_ternary(&self, condition: &Expr, then_branch: &Expr, else_branch: &Expr) -> String {
+        self.parenthesize("ternary", &[condition, then_branch, else_branch])
+    }
 }
 
 impl AstPrinter {

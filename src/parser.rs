@@ -25,13 +25,32 @@ impl<'a> Parser<'a> {
         }
         result
     }
-
-    pub fn expression(&mut self) -> Result<Expr, ParseError> {
-        self.comma()
+    
+    fn expression(&mut self) -> Result<Expr, ParseError> {
+        self.ternary()
     }
 
+    fn ternary(&mut self) -> Result<Expr, ParseError> {
+        let mut expr: Expr = self.comma()?;
+
+        while self.match_tokens(&[QUESTION_MARK]) {
+            let condition =expr.clone();
+            let then_branch = self.comma()?;
+            
+            self.consume(COLON, "Expect ':' after then branch of ternary expression.")?; 
+            
+            let else_branch = self.expression()?;
+            
+            expr = Expr::Ternary { condition: Box::new(condition), then_branch: Box::new(then_branch), else_branch: Box::new(else_branch) }
+            
+        }
+
+        Ok(expr)
+    } 
+
+    
     fn equality(&mut self) -> Result<Expr, ParseError> {
-        let mut expr = self.comparision()?;
+        let mut expr: Expr = self.comparision()?;
 
         while self.match_tokens(&[BANG_EQUAL, EQUAL_EQUAL]) {
             let operator = self.previous();
@@ -55,6 +74,7 @@ impl<'a> Parser<'a> {
 
         Ok(expr)
     }
+
 
     fn comparision(&mut self) -> Result<Expr, ParseError> {
         let mut expr = self.term()?;

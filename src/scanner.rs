@@ -85,6 +85,8 @@ impl<'a> Scanner<'a> {
             '-' => self.add_token(MINUS),
             '+' => self.add_token(PLUS),
             ';' => self.add_token(SEMICOLON),
+            ':' => self.add_token(COLON),
+            '?' => self.add_token(QUESTION_MARK),
             '*' => self.add_token(STAR),
 
             // Operators

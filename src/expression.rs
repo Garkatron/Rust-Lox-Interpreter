@@ -21,6 +21,11 @@ pub enum Expr {
     Comma {
         left: Box<Expr>,
         right: Box<Expr>
+    },
+    Ternary {
+        condition: Box<Expr>,
+        then_branch: Box<Expr>,
+        else_branch: Box<Expr>
     }
 }
 
@@ -60,6 +65,9 @@ impl fmt::Display for Expr {
             }
             Expr::Comma { left, right } => {
                 write!(f, "({}, {})", left, right)
+            },
+            Expr::Ternary { condition, then_branch, else_branch } => {
+                write!(f, "({}) ? {} : {}", condition, then_branch, else_branch)
             }
         }
     }
@@ -71,6 +79,7 @@ pub trait Visitor<R> {
     fn visit_literal(&self, value: &LiteralValue) -> R;
     fn visit_comma(&self, left: &Expr, right: &Expr) -> R;
     fn visit_unary(&self, operator: &Token, right: &Expr) -> R;
+    fn visit_ternary(&self, condition: &Expr, then_branch: &Expr, else_branch: &Expr) -> R;
 }
 
 impl Expr {
@@ -86,6 +95,10 @@ impl Expr {
             }
             Expr::Comma { left, right } => {
                 visitor.visit_comma(left, right)
+            },
+            Expr::Ternary { condition, then_branch, else_branch } => {
+                visitor.visit_ternary(condition, then_branch, else_branch)
+
             }
         }
     }
