@@ -88,22 +88,29 @@ impl Lox {
     }
 
     fn run(&mut self, source: String) {
-        let mut scanner: Scanner = Scanner::new(source, &mut self.error_reporter);
+        let mut scanner: Scanner = Scanner::new(source.clone(), &mut self.error_reporter);
         let tokens: Vec<Token> = scanner.scan_tokens();
     
         let mut parser = Parser::new(tokens.clone(), &mut self.error_reporter);
         
+        println!("{}", source);
+
+        println!("---------------TOKEN--------------");
+
         for token in tokens.clone() {
             println!("{}",token);
         }
+
+        println!("----------------------------------");
 
         match parser.parse() {
             Ok(expr) => {
                 if self.error_reporter.had_error {
                     return;
                 }
-    
-                println!("{}", AstPrinter::new().print(expr.clone()));
+                println!("{}", expr.clone());
+                
+                println!("{}", AstPrinter.print(&expr));
             }
             Err(e) => {
                 eprintln!("Error parsing expr: {:?}", e);

@@ -1,7 +1,7 @@
-use crate::parse_error::ParseError;
-use crate::{expression::*, token::Token, token_type::TokenType};
-use crate::TokenType::*;
 use crate::error_reporter::ErrorReporter;
+use crate::parse_error::ParseError;
+use crate::TokenType::*;
+use crate::{expression::*, token::Token, token_type::TokenType};
 
 pub struct Parser<'a> {
     tokens: Vec<Token>,
@@ -19,15 +19,15 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(&mut self) -> Result<Expr, ParseError> {
-        match self.expression() {
-            Ok(expr) => Ok(expr),
-            Err(_) => Err(ParseError)
+        let result = self.expression();
+        if result.is_err() {
+            self.synchronize();
         }
+        result
     }
-    
 
     pub fn expression(&mut self) -> Result<Expr, ParseError> {
-        self.equality()
+        self.comma()
     }
 
     fn equality(&mut self) -> Result<Expr, ParseError> {
@@ -40,8 +40,17 @@ impl<'a> Parser<'a> {
                 left: Box::new(expr),
                 operator: operator.clone(),
                 right: Box::new(right),
-                lexeme: operator.lexeme.clone(),
             };
+        }
+
+        Ok(expr)
+    }
+
+    fn comma(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.equality()?;
+        while self.match_tokens(&[COMMA]) {
+            let right = self.equality()?;
+            expr = Expr::Comma { left: Box::new(expr), right: Box::new(right) }
         }
 
         Ok(expr)
@@ -57,7 +66,6 @@ impl<'a> Parser<'a> {
                 left: Box::new(expr),
                 operator: operator.clone(),
                 right: Box::new(right),
-                lexeme: operator.lexeme.clone(),
             };
         }
 
@@ -74,7 +82,6 @@ impl<'a> Parser<'a> {
                 left: Box::new(expr),
                 operator: operator.clone(),
                 right: Box::new(right),
-                lexeme: operator.lexeme.clone(),
             };
         }
 
@@ -91,7 +98,6 @@ impl<'a> Parser<'a> {
                 left: Box::new(expr),
                 operator: operator.clone(),
                 right: Box::new(right),
-                lexeme: operator.lexeme.clone(),
             };
         }
 
@@ -105,7 +111,6 @@ impl<'a> Parser<'a> {
             return Ok(Expr::Unary {
                 operator: operator.clone(),
                 right: Box::new(right),
-                lexeme: operator.lexeme,
             });
         }
 
@@ -134,16 +139,15 @@ impl<'a> Parser<'a> {
             });
         }
         if self.match_tokens(&[LEFT_PAREN]) {
-            let expr = self.expression()?; 
-            self.consume(RIGHT_PAREN, "Expect ')' after expression.");
+            let expr = self.expression()?;
+            self.consume(RIGHT_PAREN, "Expect ')' after expression.")?;
             return Ok(Expr::Grouping {
                 expression: Box::new(expr),
             });
         }
-    
-        Err(self.error(self.peek(), "Expect expression.".to_string())) 
+
+        Err(self.error(self.peek().clone(), "Expect expression."))
     }
-    
 
     fn match_tokens(&mut self, types: &[TokenType]) -> bool {
         for ttype in types {
@@ -170,19 +174,19 @@ impl<'a> Parser<'a> {
     }
 
     fn is_at_end(&self) -> bool {
-        self.peek().t_type == EOF
+        matches!(self.peek().t_type, EOF)
     }
 
-    fn peek(&self) -> Token {
-        self.tokens[self.current].clone()
+    fn peek(&self) -> &Token {
+        &self.tokens[self.current]
     }
 
     fn previous(&self) -> Token {
         self.tokens.get(self.current - 1).unwrap().clone()
     }
 
-    fn error(&mut self, token: Token, message: String) -> ParseError {
-        self.error_reporter.token_error(token, message); // Usa el error_reporter
+    fn error(&mut self, token: Token, message: &str) -> ParseError {
+        self.error_reporter.token_error(&token, message);
         ParseError
     }
 
@@ -200,14 +204,14 @@ impl<'a> Parser<'a> {
                 | TokenType::RETURN => return,
                 _ => self.advance(),
             };
-        };
-    }
-    
-
-    fn consume(&mut self, ttype: TokenType, message: &str) -> Token {
-        if self.check(ttype) {
-            return self.advance();
         }
-        panic!("{} {}", self.peek(), message);
+    }
+
+    fn consume(&mut self, ttype: TokenType, message: &str) -> Result<Token, ParseError> {
+        if self.check(ttype) {
+            Ok(self.advance())
+        } else {
+            Err(self.error(self.peek().clone(), message))
+        }
     }
 }

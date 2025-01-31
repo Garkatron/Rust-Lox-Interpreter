@@ -126,13 +126,13 @@ impl<'a> Scanner<'a> {
                         }
                         self.advance();
                     }
-                    self.error_reporter.error(self.line,"Unfinished multiline comment.".to_string())                                        
+                    self.error_reporter.error(self.line,"Unfinished multiline comment.")                                        
                 } else if self.char_match('/') {
                     while self.peek() != '\n' && !self.is_at_end() {
                         self.advance();
                     }
                 } else {
-                    self.add_token(SLASH)
+                    self.add_token(SLASH);
                 }
             }
 
@@ -142,7 +142,7 @@ impl<'a> Scanner<'a> {
             '\t' => {}
 
             // Newline
-            '\n' => { self.line += 1}
+            '\n' => { self.line += 1; }
 
             // Longer Lexemes
             // Literals
@@ -158,7 +158,7 @@ impl<'a> Scanner<'a> {
                 } else if Self::is_alpha(c) {
                     self.identifier()
                 } else {
-                    self.error_reporter.error(self.line,"Unexpected character.".to_string())
+                    self.error_reporter.error(self.line,"Unexpected character.")
                 }
 
             }
@@ -196,7 +196,7 @@ impl<'a> Scanner<'a> {
         
         // If not string closed 
         if self.is_at_end() {
-            self.error_reporter.error(self.line, "Unterminated String".to_string());
+            self.error_reporter.error(self.line, "Unterminated String");
         }
         
         // The closing "

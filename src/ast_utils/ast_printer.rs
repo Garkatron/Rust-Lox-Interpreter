@@ -1,16 +1,16 @@
-use crate::expression::Expr;
-use crate::expression::Visitor;
+use crate::expression::{Expr, Visitor};
 use crate::LiteralValue;
 use crate::Token;
 
 pub struct AstPrinter;
+
 impl Visitor<String> for AstPrinter {
-    fn visit_unary(&self, _operator: &Token, right: &Expr, lexeme: &String) -> String {
-        self.parenthesize(lexeme, &[right])
+    fn visit_unary(&self, operator: &Token, right: &Expr) -> String {
+        self.parenthesize(&operator.lexeme, &[right])
     }
-    
-    fn visit_binary(&self, left: &Expr, _operator: &Token, right: &Expr, lexeme: &String) -> String {
-        self.parenthesize(lexeme, &[left, right])
+
+    fn visit_binary(&self, left: &Expr, operator: &Token, right: &Expr) -> String {
+        self.parenthesize(&operator.lexeme, &[left, right])
     }
 
     fn visit_literal(&self, value: &LiteralValue) -> String {
@@ -23,21 +23,21 @@ impl Visitor<String> for AstPrinter {
     }
 
     fn visit_grouping(&self, expr: &Expr) -> String {
-        return self.parenthesize("group".to_string(), &[expr]);
+        self.parenthesize("group", &[expr])
+    }
+
+    fn visit_comma(&self, left: &Expr, right: &Expr) -> String {
+        self.parenthesize("comma", &[left, right])
     }
 }
 
 impl AstPrinter {
-    pub fn new() -> AstPrinter {
-        Self {}
+    pub fn print(&self, expr: &Expr) -> String {
+        expr.accept(self)
     }
 
-    pub fn print(&self, expr: Expr) -> String {
-        return expr.accept(self);
-    }
-
-    fn parenthesize(&self, name: impl Into<String>, exprs: &[&Expr]) -> String {
-        let mut text = format!("({}", name.into());
+    fn parenthesize(&self, name: &str, exprs: &[&Expr]) -> String {
+        let mut text = format!("({}", name);
 
         for expr in exprs {
             text.push(' ');
