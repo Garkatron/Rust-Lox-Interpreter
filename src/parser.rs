@@ -7,6 +7,7 @@ pub struct Parser<'a> {
     tokens: Vec<Token>,
     current: usize,
     error_reporter: &'a mut ErrorReporter,
+    errors: Vec<ParseError>
 }
 
 impl<'a> Parser<'a> {
@@ -15,6 +16,7 @@ impl<'a> Parser<'a> {
             tokens,
             current: 0,
             error_reporter,
+            errors: vec![]
         }
     }
 
@@ -37,7 +39,7 @@ impl<'a> Parser<'a> {
             let condition =expr.clone();
             let then_branch = self.comma()?;
             
-            self.consume(COLON, "Expect ':' after then branch of ternary expression.")?; 
+            self.consume(COLON, ParseError::ExpectedTernaryBranch(0, 0))?; 
             
             let else_branch = self.expression()?;
             
@@ -160,13 +162,13 @@ impl<'a> Parser<'a> {
         }
         if self.match_tokens(&[LEFT_PAREN]) {
             let expr = self.expression()?;
-            self.consume(RIGHT_PAREN, "Expect ')' after expression.")?;
+            self.consume(RIGHT_PAREN, ParseError::ExpectedRightParen(self.peek().line))?;
             return Ok(Expr::Grouping {
                 expression: Box::new(expr),
             });
         }
 
-        Err(self.error(self.peek().clone(), "Expect expression."))
+        Err(self.report_error(ParseError::InvalidExpression(format!("Expected a valid expression, found: {:?}", self.peek().t_type), self.peek().line)))
     }
 
     fn match_tokens(&mut self, types: &[TokenType]) -> bool {
@@ -205,10 +207,12 @@ impl<'a> Parser<'a> {
         self.tokens.get(self.current - 1).unwrap().clone()
     }
 
-    fn error(&mut self, token: Token, message: &str) -> ParseError {
-        self.error_reporter.token_error(&token, message);
-        ParseError
+
+    fn report_error(&mut self, error: ParseError) -> ParseError {
+        self.errors.push(error.clone());
+        error
     }
+    
 
     fn synchronize(&mut self) {
         self.advance();
@@ -227,11 +231,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn consume(&mut self, ttype: TokenType, message: &str) -> Result<Token, ParseError> {
+    fn consume(&mut self, ttype: TokenType, message: ParseError) -> Result<Token, ParseError> {
         if self.check(ttype) {
             Ok(self.advance())
         } else {
-            Err(self.error(self.peek().clone(), message))
+            Err(self.report_error(message))
         }
     }
 }
