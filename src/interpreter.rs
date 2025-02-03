@@ -1,10 +1,8 @@
 use crate::expression::{Expr, Visitor};
-use crate::runtime_error::RuntimeError;
 use crate::token_type::TokenType;
 use crate::LiteralValue;
 use crate::Token;
 pub struct Interpreter;
-
 
 // LAST https://craftinginterpreters.com/evaluating-expressions.html#detecting-runtime-errors
 
@@ -13,11 +11,6 @@ impl Visitor<LiteralValue> for Interpreter {
         let lit = self.evaluate(right);
         match operator.t_type {
             TokenType::MINUS => {
-
-                if let Err(e) = self.check_number_operand(operator, &lit) {
-                    eprintln!("Error: {}", e);
-                    return LiteralValue::Nil;
-                }
 
                 match lit {
                     LiteralValue::Number(n) => LiteralValue::Number(-n),
@@ -39,32 +32,56 @@ impl Visitor<LiteralValue> for Interpreter {
             (TokenType::PLUS, LiteralValue::Number(n), LiteralValue::Number(n2)) => {
                 LiteralValue::Number(n + n2)
             }
-            (TokenType::MINUS, LiteralValue::Number(n), LiteralValue::Number(n2)) => {
-                LiteralValue::Number(n - n2)
-            }
-            (TokenType::SLASH, LiteralValue::Number(n), LiteralValue::Number(n2)) => {
-                LiteralValue::Number(n / n2)
-            }
-            (TokenType::STAR, LiteralValue::Number(n), LiteralValue::Number(n2)) => {
-                LiteralValue::Number(n * n2)
-            }
             (TokenType::PLUS, LiteralValue::String(s), LiteralValue::String(s2)) => {
                 LiteralValue::String(format!("{}{}", s, s2))
             }
+
+            (TokenType::MINUS, LiteralValue::Number(n), LiteralValue::Number(n2)) => {
+                LiteralValue::Number(n - n2)
+            }
+
+            (TokenType::SLASH, LiteralValue::Number(n), LiteralValue::Number(n2)) => {
+                LiteralValue::Number(n / n2)
+            }
+
+            (TokenType::STAR, LiteralValue::Number(n), LiteralValue::Number(n2)) => {
+                LiteralValue::Number(n * n2)
+            }
+
             (TokenType::GREATER, LiteralValue::Number(n), LiteralValue::Number(n2)) => {
                 LiteralValue::Boolean(n > n2)
             }
+
             (TokenType::GREATER_EQUAL, LiteralValue::Number(n), LiteralValue::Number(n2)) => {
                 LiteralValue::Boolean(n >= n2)
             }
+
             (TokenType::LESS, LiteralValue::Number(n), LiteralValue::Number(n2)) => {
                 LiteralValue::Boolean(n < n2)
             }
+
             (TokenType::LESS_EQUAL, LiteralValue::Number(n), LiteralValue::Number(n2)) => {
                 LiteralValue::Boolean(n <= n2)
             }
-            (TokenType::BANG_EQUAL, left, right) => LiteralValue::Boolean(!is_equal(&left, &right)),
-            (TokenType::EQUAL_EQUAL, left, right) => LiteralValue::Boolean(is_equal(&left, &right)),
+
+            (
+                TokenType::MINUS
+                | TokenType::SLASH
+                | TokenType::STAR
+                | TokenType::GREATER
+                | TokenType::GREATER_EQUAL
+                | TokenType::LESS
+                | TokenType::LESS_EQUAL,
+                _,
+                _,
+            ) => LiteralValue::Nil,
+
+            (TokenType::BANG_EQUAL, left, right) => {
+                LiteralValue::Boolean(!self.is_equal(&left, &right))
+            }
+            (TokenType::EQUAL_EQUAL, left, right) => {
+                LiteralValue::Boolean(self.is_equal(&left, &right))
+            }
             _ => LiteralValue::Nil,
         }
     }
@@ -90,24 +107,13 @@ impl Visitor<LiteralValue> for Interpreter {
 
 impl Interpreter {
     pub fn evaluate(&self, expr: &Expr) -> LiteralValue {
-        expr.accept(self)
-    }
-
-    pub fn check_number_operand(
-        &self,
-        operator: &Token,
-        operand: &LiteralValue,
-    ) -> Result<(), RuntimeError> {
-        match operand {
-            LiteralValue::Number(_) => Ok(()),
-            _ => Err(RuntimeError::new(
-                operator.clone(),
-                "Operand must be a number.".to_string(),
-            )),
+        match expr.accept(self) {
+            Ok(resultado) => resultado,
+            Err(error) => panic!("Error al evaluar la expresión: {}", error),
         }
     }
-
-    fn is_equal(left: &LiteralValue, right: &LiteralValue) -> bool {
+ 
+    fn is_equal(&self, left: &LiteralValue, right: &LiteralValue) -> bool {
         match (left, right) {
             (LiteralValue::Nil, LiteralValue::Nil) => true,
 
