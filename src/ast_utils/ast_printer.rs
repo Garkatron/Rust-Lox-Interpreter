@@ -1,19 +1,21 @@
-use crate::expression::{Expr, Visitor};
+// Expression Printer (Visitor)
+
+use crate::expression::{Expr, Visitor}; 
 use crate::LiteralValue;
 use crate::Token;
 
 pub struct AstPrinter;
-
+/* 
 impl Visitor<String> for AstPrinter {
-    fn visit_unary(&self, operator: &Token, right: &Expr) -> String {
+    fn visit_unary(&self, operator: &Token, right: &Expr) -> Result<String, RuntimeError> {
         self.parenthesize(&operator.lexeme, &[right])
     }
 
-    fn visit_binary(&self, left: &Expr, operator: &Token, right: &Expr) -> String {
+    fn visit_binary(&self, left: &Expr, operator: &Token, right: &Expr) -> Result<String, RuntimeError> {
         self.parenthesize(&operator.lexeme, &[left, right])
     }
 
-    fn visit_literal(&self, value: &LiteralValue) -> String {
+    fn visit_literal(&self, value: &LiteralValue) -> Result<String, RuntimeError> {
         match value {
             LiteralValue::Nil => "nil".to_string(),
             LiteralValue::Number(n) => n.to_string(),
@@ -22,15 +24,15 @@ impl Visitor<String> for AstPrinter {
         }
     }
 
-    fn visit_grouping(&self, expr: &Expr) -> String {
+    fn visit_grouping(&self, expr: &Expr) -> Result<String, RuntimeError> {
         self.parenthesize("group", &[expr])
     }
 
-    fn visit_comma(&self, left: &Expr, right: &Expr) -> String {
+    fn visit_comma(&self, left: &Expr, right: &Expr) -> Result<String, RuntimeError> {
         self.parenthesize("comma", &[left, right])
     }
 
-    fn visit_ternary(&self, condition: &Expr, then_branch: &Expr, else_branch: &Expr) -> String {
+    fn visit_ternary(&self, condition: &Expr, then_branch: &Expr, else_branch: &Expr) -> Result<String, RuntimeError> {
         self.parenthesize("ternary", &[condition, then_branch, else_branch])
     }
 }
@@ -51,3 +53,4 @@ impl AstPrinter {
         text
     }
 }
+*/

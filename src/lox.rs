@@ -1,5 +1,6 @@
 use crate::ast_utils::ast_printer::AstPrinter;
 use crate::error_reporter::ErrorReporter;
+use crate::interpreter::Interpreter;
 use crate::parser::Parser;
 use crate::scanner::Scanner;
 use crate::token::Token;
@@ -26,7 +27,7 @@ pub struct Lox {
 impl Lox {
     pub fn new() -> Self {
         Self {
-            error_reporter: ErrorReporter::new(),
+            error_reporter: ErrorReporter::new()
         }
     }
 
@@ -60,6 +61,7 @@ impl Lox {
     fn run_prompt(&mut self) {
         // Clear stdout
         println!("Clear terminal");
+        
         // let _ = io::stdout().flush();
         // Flush out
         std::io::stdout().flush().unwrap();
@@ -110,7 +112,12 @@ impl Lox {
                 }
                 println!("{}", expr.clone());
                 
-                println!("{}", AstPrinter.print(&expr));
+                match Interpreter.interpret(&expr) {
+                    Ok(r) => {
+                        println!("RESULT: {}", r)
+                    }
+                    Err(e)=>{println!("ERROR: {}", e)}
+                }
             }
             Err(e) => {
                 eprintln!("Error parsing expr: {:?}", e);
