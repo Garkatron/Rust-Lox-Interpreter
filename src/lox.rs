@@ -32,28 +32,44 @@ impl Lox {
 
     // Init method
     pub fn init(&mut self, args: Vec<String>) {
-        println!("Args size: {}", &args.len());
-        println!("Args: {}", &args.join(" "));
-        println!("Args: {}", args.len() == 2 && &args[1] == "-v");
+        match args.len() {
+            0 => {
+                eprintln!("[ERROR]: No arguments provided");
+                process::exit(64);
+            }
+            1 => {
+                println!("[LOX]: Running prompt");
+                self.run_prompt();
+            }
 
-        if args.len() < 1 {
-            println!("Error:");
-            process::exit(64);
-        } else if args.len() == 2 && &args[1] == "-v" {
-            println!("Running prompt");
-            self.run_prompt();
-        } else if args.len() == 2 {
-            println!("Running file");
-            self.run_file(&args[1]);
+            2 => {
+                println!("[LOX]: :/");
+            }
+
+            3 => match args.get(1).map(String::as_str) {
+                Some("-v") => {
+                    println!("[LOX]: Running file");
+                    self.run_file(&args[2]);
+                }
+                _ => {
+                    eprintln!("[ERROR]: Invalid argument. Expected '-v' for file execution.");
+                    process::exit(64);
+                }
+            },
+            _ => {
+                eprintln!("[ERROR]: Too many arguments.");
+                process::exit(64);
+            }
         }
     }
+    
     fn run_file(&mut self, path: &String) {
         let file = PathBuf::from(path);
         let content = fs::read_to_string(file);
         if let Ok(ok_content) = content {
             self.run(ok_content)
         } else {
-            // ! Error on read file
+            println!("[ERROR]: Can't read your file.")
         }
     }
 
@@ -88,13 +104,6 @@ impl Lox {
         }
     }
     fn run(&mut self, source: String) {
-        println!("\n========== EJECUTANDO CÓDIGO ==========");
-        println!(
-            "Código fuente:\n{}
-",
-            source
-        );
-
         let mut scanner: Scanner = Scanner::new(source.clone(), &mut self.error_reporter);
         let tokens: Vec<Token> = scanner.scan_tokens();
 
