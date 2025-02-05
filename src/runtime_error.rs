@@ -1,21 +1,25 @@
-use crate::Token;
+use std::fmt;
 
-#[derive(Debug)]
-pub struct RuntimeError {
-    operator: Token,
-    message: String,
+use crate::token::Token;
+
+#[derive(Debug, Clone)]
+pub enum RuntimeError {
+    BadOperator(Token, String),
+    BadStatement(String),
 }
 
-impl RuntimeError {
-    pub fn new(operator: Token, message: String) -> Self {
-        RuntimeError { operator, message }
-    }
-}
-
-impl std::fmt::Display for RuntimeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "[Error at {}] {}", self.operator, self.message)
+impl fmt::Display for RuntimeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            RuntimeError::BadOperator(operator, message) => {
+                write!(f, "Bad operator '{}': {}", operator, message)
+            }
+            RuntimeError::BadStatement(message) => {
+                write!(f, "Bad statement: {}", message)
+            }
+        }
     }
 }
 
 impl std::error::Error for RuntimeError {}
+

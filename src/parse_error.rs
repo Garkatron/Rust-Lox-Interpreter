@@ -13,6 +13,8 @@ pub enum ParseError {
     ExpectedRightParen(usize),
     ExpectedTernaryBranch(usize, usize),
     MissingLeftOperand(usize),
+    EspectSemicolonAfterValue(usize),
+    EspectSemicolonAfterExpression(usize)
 }
 
 impl fmt::Display for ParseError {
@@ -47,6 +49,12 @@ impl fmt::Display for ParseError {
             }
             ParseError::MissingLeftOperand(line) => {
                 write!(f, "Expect a left operand after an unary expression, at line: {}", line)
+            }
+            ParseError::EspectSemicolonAfterValue(line) => {
+                write!(f, "Expect ';' after value. At line: {}", line)
+            }
+            ParseError::EspectSemicolonAfterExpression(line) => {
+                write!(f, "Expect ';' after expression. At line: {}", line)
             }
         }
     }

@@ -1,4 +1,7 @@
-use crate::expression::{Expr, Visitor};
+use std::collections::btree_map::Values;
+
+use crate::expression::{self, Expr, Visitor as ExpressionVisitor};
+use crate::stmt::{Stmt, Visitor as StatementVisitor};
 use crate::token_type::TokenType;
 use crate::LiteralValue;
 use crate::Token;
@@ -6,16 +9,16 @@ use crate::runtime_error::RuntimeError;
 
 pub struct Interpreter;
 
-impl Visitor<LiteralValue> for Interpreter {
+impl ExpressionVisitor<LiteralValue> for Interpreter {
     fn visit_unary(&self, operator: &Token, right: &Expr) -> Result<LiteralValue, RuntimeError> {
         let lit = self.evaluate(right)?;
         match operator.t_type {
             TokenType::MINUS => match lit {
                 LiteralValue::Number(n) => Ok(LiteralValue::Number(-n)),
-                _ => Err(RuntimeError::new(operator.clone(),"Operand must be a number.".to_string())),
+                _ => Err(RuntimeError::BadOperator(operator.clone(),"Operand must be a number.".to_string())),
             },
             TokenType::BANG => Ok(LiteralValue::Boolean(!self.is_truthy(lit))),
-            _ => Err(RuntimeError::new(operator.clone(),"Invalid unary operator.".to_string())),
+            _ => Err(RuntimeError::BadOperator(operator.clone(),"Invalid unary operator.".to_string())),
         }
     }
 
@@ -38,7 +41,7 @@ impl Visitor<LiteralValue> for Interpreter {
             }
             (TokenType::SLASH, LiteralValue::Number(n1), LiteralValue::Number(n2)) => {
                 if *n2 == 0.0 {
-                    return Err(RuntimeError::new(operator.clone(),"Division by zero.".to_string()));
+                    return Err(RuntimeError::BadOperator(operator.clone(),"Division by zero.".to_string()));
                 }
                 Ok(LiteralValue::Number(n1 / n2))
             }
@@ -59,7 +62,7 @@ impl Visitor<LiteralValue> for Interpreter {
             }
             (TokenType::BANG_EQUAL, _, _) => Ok(LiteralValue::Boolean(!self.is_equal(&left_lit, &right_lit))),
             (TokenType::EQUAL_EQUAL, _, _) => Ok(LiteralValue::Boolean(self.is_equal(&left_lit, &right_lit))),
-            _ => Err(RuntimeError::new(operator.clone(),"Invalid binary operation.".to_string())),
+            _ => Err(RuntimeError::BadOperator(operator.clone(),"Invalid binary operation.".to_string())),
         }
     }
 
@@ -83,16 +86,47 @@ impl Visitor<LiteralValue> for Interpreter {
         }
     }
 }
+impl StatementVisitor<()> for Interpreter {
+    fn visit_print(&self, stmt: &Stmt) -> Result<(), RuntimeError> {
+        match stmt {
+            Stmt::Print { expression } => {
+                let value = self.evaluate(&expression)?;
+                println!("{}", self.stringify(&value));
+                Ok(()) 
+            }
+            _ => Err(RuntimeError::BadStatement("Expected Print".to_string())),
+        }
+    }
+
+    fn visit_expression(&self, stmt: &Stmt) -> Result<(), RuntimeError> {
+        match stmt {
+            Stmt::Expression { expression } => {
+                let value = self.evaluate(&expression)?;
+                println!("{}", self.stringify(&value));
+                Ok(()) 
+            }
+            _ => Err(RuntimeError::BadStatement("Expected expression".to_string())),
+        }
+    }
+}
 
 impl Interpreter {
     fn evaluate(&self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         expr.accept(self)
     }
 
-    pub fn interpret(&self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
-        self.evaluate(expr)
+    pub fn interpret(&self, statements: Vec<Stmt>) -> Result<(), RuntimeError> {
+        for statement in statements {
+            self.execute(statement)?;
+        }
+        Ok(())
     }
  
+    fn execute(&self, stmt: Stmt) -> Result<(), RuntimeError> {
+        stmt.accept(self)?;
+        Ok(())
+    }
+
     fn is_equal(&self, left: &LiteralValue, right: &LiteralValue) -> bool {
         match (left, right) {
             (LiteralValue::Nil, LiteralValue::Nil) => true,

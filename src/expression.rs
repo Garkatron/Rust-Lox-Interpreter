@@ -37,6 +37,30 @@ pub enum LiteralValue {
     Nil,
 }
 
+pub trait Visitor<R> {
+    fn visit_binary(&self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
+    fn visit_grouping(&self, expression: &Expr) -> Result<R, RuntimeError>;
+    fn visit_literal(&self, value: &LiteralValue) -> Result<R, RuntimeError>;
+    fn visit_comma(&self, left: &Expr, right: &Expr) -> Result<R, RuntimeError>;
+    fn visit_unary(&self, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
+    fn visit_ternary(&self, condition: &Expr, then_branch: &Expr, else_branch: &Expr) -> Result<R, RuntimeError>;
+}
+
+impl Expr {
+    pub fn accept<R>(&self, visitor: &dyn Visitor<R>) -> Result<R, RuntimeError> {
+        match self {
+            Expr::Binary { left, operator, right } => visitor.visit_binary(left, operator, right),
+            Expr::Grouping { expression } => visitor.visit_grouping(expression),
+            Expr::Literal { value } => visitor.visit_literal(value),
+            Expr::Unary { operator, right } => visitor.visit_unary(operator, right),
+            Expr::Comma { left, right } => visitor.visit_comma(left, right),
+            Expr::Ternary { condition, then_branch, else_branch } => {
+                visitor.visit_ternary(condition, then_branch, else_branch)
+            }
+        }
+    }
+}
+
 
 impl fmt::Display for LiteralValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -74,26 +98,4 @@ impl fmt::Display for Expr {
     }
 }
 
-pub trait Visitor<R> {
-    fn visit_binary(&self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
-    fn visit_grouping(&self, expression: &Expr) -> Result<R, RuntimeError>;
-    fn visit_literal(&self, value: &LiteralValue) -> Result<R, RuntimeError>;
-    fn visit_comma(&self, left: &Expr, right: &Expr) -> Result<R, RuntimeError>;
-    fn visit_unary(&self, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
-    fn visit_ternary(&self, condition: &Expr, then_branch: &Expr, else_branch: &Expr) -> Result<R, RuntimeError>;
-}
 
-impl Expr {
-    pub fn accept<R>(&self, visitor: &dyn Visitor<R>) -> Result<R, RuntimeError> {
-        match self {
-            Expr::Binary { left, operator, right } => visitor.visit_binary(left, operator, right),
-            Expr::Grouping { expression } => visitor.visit_grouping(expression),
-            Expr::Literal { value } => visitor.visit_literal(value),
-            Expr::Unary { operator, right } => visitor.visit_unary(operator, right),
-            Expr::Comma { left, right } => visitor.visit_comma(left, right),
-            Expr::Ternary { condition, then_branch, else_branch } => {
-                visitor.visit_ternary(condition, then_branch, else_branch)
-            }
-        }
-    }
-}

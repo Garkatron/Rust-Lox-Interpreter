@@ -107,19 +107,22 @@ impl Lox {
         let mut parser = Parser::new(tokens.clone());
 
         match parser.parse() {
-            Ok(expr) => {
+            Ok(statements) => {
                 if self.error_reporter.had_error {
                     println!("\n❌ Se encontraron errores durante el análisis.");
                     return;
                 }
                 println!("\n✅ Árbol de sintaxis abstracta generado:");
-                println!("{}", expr);
+
+                for stat in &statements {
+                    println!("{:?}", stat);
+                }
 
                 println!("\n========== RESULTADO ==========");
 
-                match Interpreter.interpret(&expr) {
-                    Ok(r) => {
-                        println!("\n{}", r);
+                match Interpreter.interpret(statements) {
+                    Ok(_) => {
+                        println!("End");
                     }
                     Err(e) => {
                         println!("\n❌ ERROR en interpretación: {}", e);

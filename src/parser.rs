@@ -1,11 +1,12 @@
 use crate::parse_error::ParseError;
+use crate::stmt::Stmt;
 use crate::TokenType::*;
 use crate::{expression::*, token::Token, token_type::TokenType};
 
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
-    errors: Vec<ParseError>
+    errors: Vec<ParseError>,
 }
 
 impl Parser {
@@ -13,41 +14,75 @@ impl Parser {
         Self {
             tokens,
             current: 0,
-            errors: vec![]
+            errors: vec![],
         }
     }
 
-    pub fn parse(&mut self) -> Result<Expr, ParseError> {
-        let result = self.expression();
-        if result.is_err() {
-            self.synchronize();
+    pub fn parse(&mut self) -> Result<Vec<Stmt>, ParseError> {
+        let mut statements: Vec<Stmt> = vec![];
+    
+        while !self.is_at_end() {
+            match self.statement() {
+                Ok(stmt) => statements.push(stmt),  
+                Err(e) => {
+                    self.errors.push(e.clone());
+                    self.synchronize(); 
+                }
+            }
         }
-        result
+    
+        Ok(statements)
     }
     
+
+    fn statement(&mut self) -> Result<Stmt, ParseError> {
+        if self.match_tokens(&[PRINT]) {
+            return self.print_statement();
+        }
+        return self.expression_statement();
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt, ParseError> {
+        let value: Expr = self.expression()?;
+        self.consume(SEMICOLON, ParseError::EspectSemicolonAfterValue(0))?;
+        Ok(Stmt::Print {
+            expression: Box::new(value),
+        })
+    }
+
     fn expression(&mut self) -> Result<Expr, ParseError> {
         self.ternary()
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt, ParseError> {
+        let expr: Expr = self.expression()?;
+        self.consume(SEMICOLON, ParseError::EspectSemicolonAfterExpression(0))?;
+        return Ok(Stmt::Expression {
+            expression: Box::new(expr),
+        });
     }
 
     fn ternary(&mut self) -> Result<Expr, ParseError> {
         let mut expr: Expr = self.comma()?;
 
         while self.match_tokens(&[QUESTION_MARK]) {
-            let condition =expr.clone();
+            let condition = expr.clone();
             let then_branch = self.comma()?;
-            
-            self.consume(COLON, ParseError::ExpectedTernaryBranch(0, 0))?; 
-            
+
+            self.consume(COLON, ParseError::ExpectedTernaryBranch(0, 0))?;
+
             let else_branch = self.expression()?;
-            
-            expr = Expr::Ternary { condition: Box::new(condition), then_branch: Box::new(then_branch), else_branch: Box::new(else_branch) }
-            
+
+            expr = Expr::Ternary {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: Box::new(else_branch),
+            }
         }
 
         Ok(expr)
-    } 
+    }
 
-    
     fn equality(&mut self) -> Result<Expr, ParseError> {
         let mut expr: Expr = self.comparision()?;
 
@@ -68,12 +103,14 @@ impl Parser {
         let mut expr = self.equality()?;
         while self.match_tokens(&[COMMA]) {
             let right = self.equality()?;
-            expr = Expr::Comma { left: Box::new(expr), right: Box::new(right) }
+            expr = Expr::Comma {
+                left: Box::new(expr),
+                right: Box::new(right),
+            }
         }
 
         Ok(expr)
     }
-
 
     fn comparision(&mut self) -> Result<Expr, ParseError> {
         let mut expr = self.term()?;
@@ -159,13 +196,22 @@ impl Parser {
         }
         if self.match_tokens(&[LEFT_PAREN]) {
             let expr = self.expression()?;
-            self.consume(RIGHT_PAREN, ParseError::ExpectedRightParen(self.peek().line))?;
+            self.consume(
+                RIGHT_PAREN,
+                ParseError::ExpectedRightParen(self.peek().line),
+            )?;
             return Ok(Expr::Grouping {
                 expression: Box::new(expr),
             });
         }
 
-        Err(self.report_error(ParseError::InvalidExpression(format!("Expected a valid expression, found: {:?}", self.peek().t_type), self.peek().line)))
+        Err(self.report_error(ParseError::InvalidExpression(
+            format!(
+                "Expected a valid expression, found: {:?}",
+                self.peek().t_type
+            ),
+            self.peek().line,
+        )))
     }
 
     fn match_tokens(&mut self, types: &[TokenType]) -> bool {
@@ -204,12 +250,10 @@ impl Parser {
         self.tokens.get(self.current - 1).unwrap().clone()
     }
 
-
     fn report_error(&mut self, error: ParseError) -> ParseError {
         self.errors.push(error.clone());
         error
     }
-    
 
     fn synchronize(&mut self) {
         self.advance();
