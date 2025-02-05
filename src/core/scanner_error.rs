@@ -1,7 +1,7 @@
 #[derive(Debug, Clone)]
 pub enum ScannerError {
-    UnexpectedCharacter(char, usize),  // Carácter inesperado en una posición
-    UnterminatedString(usize),         // Cadena no terminada
+    UnexpectedCharacter(char, usize), // Carácter inesperado en una posición
+    UnterminatedString(usize),        // Cadena no terminada
     UnfinishedMultilineComment(usize), // Comentario multilinea sin terminar
     InvalidEscapeSequence(usize),     // Secuencia de escape no válida
 }

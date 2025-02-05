@@ -11,14 +11,25 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         match operator.t_type {
             TokenType::MINUS => match lit {
                 LiteralValue::Number(n) => Ok(LiteralValue::Number(-n)),
-                _ => Err(RuntimeError::BadOperator(operator.clone(),"Operand must be a number.".to_string())),
+                _ => Err(RuntimeError::BadOperator(
+                    operator.clone(),
+                    "Operand must be a number.".to_string(),
+                )),
             },
             TokenType::BANG => Ok(LiteralValue::Boolean(!self.is_truthy(lit))),
-            _ => Err(RuntimeError::BadOperator(operator.clone(),"Invalid unary operator.".to_string())),
+            _ => Err(RuntimeError::BadOperator(
+                operator.clone(),
+                "Invalid unary operator.".to_string(),
+            )),
         }
     }
 
-    fn visit_binary(&self, left: &Expr, operator: &Token, right: &Expr) -> Result<LiteralValue, RuntimeError> {
+    fn visit_binary(
+        &self,
+        left: &Expr,
+        operator: &Token,
+        right: &Expr,
+    ) -> Result<LiteralValue, RuntimeError> {
         let left_lit = self.evaluate(left)?;
         let right_lit = self.evaluate(right)?;
 
@@ -37,7 +48,10 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
             }
             (TokenType::SLASH, LiteralValue::Number(n1), LiteralValue::Number(n2)) => {
                 if *n2 == 0.0 {
-                    return Err(RuntimeError::BadOperator(operator.clone(),"Division by zero.".to_string()));
+                    return Err(RuntimeError::BadOperator(
+                        operator.clone(),
+                        "Division by zero.".to_string(),
+                    ));
                 }
                 Ok(LiteralValue::Number(n1 / n2))
             }
@@ -56,9 +70,16 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
             (TokenType::LESS_EQUAL, LiteralValue::Number(n1), LiteralValue::Number(n2)) => {
                 Ok(LiteralValue::Boolean(n1 <= n2))
             }
-            (TokenType::BANG_EQUAL, _, _) => Ok(LiteralValue::Boolean(!self.is_equal(&left_lit, &right_lit))),
-            (TokenType::EQUAL_EQUAL, _, _) => Ok(LiteralValue::Boolean(self.is_equal(&left_lit, &right_lit))),
-            _ => Err(RuntimeError::BadOperator(operator.clone(),"Invalid binary operation.".to_string())),
+            (TokenType::BANG_EQUAL, _, _) => {
+                Ok(LiteralValue::Boolean(!self.is_equal(&left_lit, &right_lit)))
+            }
+            (TokenType::EQUAL_EQUAL, _, _) => {
+                Ok(LiteralValue::Boolean(self.is_equal(&left_lit, &right_lit)))
+            }
+            _ => Err(RuntimeError::BadOperator(
+                operator.clone(),
+                "Invalid binary operation.".to_string(),
+            )),
         }
     }
 
@@ -74,7 +95,12 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         self.evaluate(right)
     }
 
-    fn visit_ternary(&self, condition: &Expr, then_branch: &Expr, else_branch: &Expr) -> Result<LiteralValue, RuntimeError> {
+    fn visit_ternary(
+        &self,
+        condition: &Expr,
+        then_branch: &Expr,
+        else_branch: &Expr,
+    ) -> Result<LiteralValue, RuntimeError> {
         if self.is_truthy(self.evaluate(condition)?) {
             self.evaluate(then_branch)
         } else {
@@ -88,7 +114,7 @@ impl StatementVisitor<()> for Interpreter {
             Stmt::Print { expression } => {
                 let value = self.evaluate(&expression)?;
                 println!("{}", self.stringify(&value));
-                Ok(()) 
+                Ok(())
             }
             _ => Err(RuntimeError::BadStatement("Expected Print".to_string())),
         }
@@ -99,9 +125,11 @@ impl StatementVisitor<()> for Interpreter {
             Stmt::Expression { expression } => {
                 let value = self.evaluate(&expression)?;
                 println!("{}", self.stringify(&value));
-                Ok(()) 
+                Ok(())
             }
-            _ => Err(RuntimeError::BadStatement("Expected expression".to_string())),
+            _ => Err(RuntimeError::BadStatement(
+                "Expected expression".to_string(),
+            )),
         }
     }
 }
@@ -117,7 +145,7 @@ impl Interpreter {
         }
         Ok(())
     }
- 
+
     fn execute(&self, stmt: Stmt) -> Result<(), RuntimeError> {
         stmt.accept(self)?;
         Ok(())

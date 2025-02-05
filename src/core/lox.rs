@@ -1,10 +1,12 @@
-use crate::interpreter::Interpreter;
-use crate::parser::Parser;
-use crate::scanner::Scanner;
-use crate::token::Token;
 use std::io::Write;
 use std::path::PathBuf;
 use std::{fs, io, process};
+
+use crate::core::interpreter::Interpreter;
+use crate::core::parser::Parser;
+use crate::core::scanner::Scanner;
+use crate::core::token::Token;
+use crate::utils::colors::Color;
 
 // Macros
 macro_rules! read_line {
@@ -17,56 +19,58 @@ macro_rules! read_line {
 }
 
 // Lox
-pub struct Lox {
+pub struct Lox {}
 
-}
-
-//pub static mut had_error: bool = false;
 impl Lox {
     pub fn new() -> Self {
-        Self {  }
+        Self {}
     }
 
-    // Init method
+    pub fn print_error(msg: &str) {
+        Color::ecprintln(&format!("[ERROR]: {}", msg), Color::Red);
+    }
+
+    pub fn print_message(msg: &str) {
+        Color::cprintln(&format!("[LOX]: {}", msg), Color::Green);
+    }
+
     pub fn init(&mut self, args: Vec<String>) {
         match args.len() {
             0 => {
-                eprintln!("[ERROR]: No arguments provided");
+                Self::print_error("No arguments provided.");
                 process::exit(64);
             }
             1 => {
-                println!("[LOX]: Running prompt");
+                Self::print_message("Running prompt");
                 self.run_prompt();
             }
-
             2 => {
-                println!("[LOX]: :/");
+                Self::print_message("Running file");
             }
-
             3 => match args.get(1).map(String::as_str) {
                 Some("-v") => {
-                    println!("[LOX]: Running file");
+                    Self::print_message("Running file");
                     self.run_file(&args[2]);
                 }
                 _ => {
-                    eprintln!("[ERROR]: Invalid argument. Expected '-v' for file execution.");
+                    Self::print_error("Invalid argument. Expected '-v' for file execution.");
                     process::exit(64);
                 }
             },
             _ => {
-                eprintln!("[ERROR]: Too many arguments.");
+                Self::print_error("Too many arguments.");
                 process::exit(64);
             }
         }
     }
-    
+
     fn run_file(&mut self, path: &String) {
         let file = PathBuf::from(path);
         let content = fs::read_to_string(file);
         if let Ok(ok_content) = content {
             self.run(ok_content)
         } else {
-            println!("[ERROR]: Can't read your file.")
+            Self::print_error("Can't read your file.");
         }
     }
 
@@ -75,7 +79,6 @@ impl Lox {
         println!("Clear terminal");
 
         // let _ = io::stdout().flush();
-        // Flush out
         std::io::stdout().flush().unwrap();
 
         // Prompt loop
@@ -90,16 +93,13 @@ impl Lox {
                 break;
             }
 
-            println!("Ejecutando: {}", _input.trim());
+            Self::print_message(&format!("Ejecutando: {}", _input.trim()));
 
-            // Exec line
+            // Ejecutar línea
             self.run(_input);
-
-            // Reset error
-            // had_error = false;
-            
         }
     }
+
     fn run(&mut self, source: String) {
         let mut scanner: Scanner = Scanner::new(source.clone());
         let tokens: Vec<Token> = scanner.scan_tokens();
@@ -108,6 +108,7 @@ impl Lox {
         for token in &tokens {
             println!("{}", token);
         }
+
         let mut parser = Parser::new(tokens.clone());
 
         match parser.parse() {
@@ -116,15 +117,15 @@ impl Lox {
 
                 match Interpreter.interpret(statements) {
                     Ok(_) => {
-                        println!("End");
+                        Self::print_message("End");
                     }
                     Err(e) => {
-                        println!("\n❌ [ERROR]: on interpretation: {}", e);
+                        Self::print_error(&format!("on interpretation: {}", e));
                     }
                 }
             }
             Err(e) => {
-                eprintln!("\n❌ [ERROR]: on parsing {:?}", e);
+                Self::print_error(&format!("on parsing {:?}", e));
             }
         }
     }

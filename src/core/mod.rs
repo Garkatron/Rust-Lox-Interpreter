@@ -8,3 +8,4 @@ pub mod scanner_error;
 pub mod interpreter;
 pub mod runtime_error;
 pub mod stmt;
+pub mod lox;

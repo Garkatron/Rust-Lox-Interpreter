@@ -2,7 +2,6 @@ use std::fmt;
 
 use super::token::Token;
 
-
 #[derive(Debug, Clone)]
 pub enum RuntimeError {
     BadOperator(Token, String),
@@ -23,4 +22,3 @@ impl fmt::Display for RuntimeError {
 }
 
 impl std::error::Error for RuntimeError {}
-

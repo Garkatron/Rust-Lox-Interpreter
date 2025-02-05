@@ -1,6 +1,8 @@
+use crate::utils::colors::Color;
+
 use super::expression::LiteralValue;
-use super::{expression::Expr, parse_error::ParseError, stmt::Stmt, token::Token};
 use super::token_type::TokenType::{self, *};
+use super::{expression::Expr, parse_error::ParseError, stmt::Stmt, token::Token};
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -19,20 +21,19 @@ impl Parser {
 
     pub fn parse(&mut self) -> Result<Vec<Stmt>, ParseError> {
         let mut statements: Vec<Stmt> = vec![];
-    
+
         while !self.is_at_end() {
             match self.statement() {
-                Ok(stmt) => statements.push(stmt),  
+                Ok(stmt) => statements.push(stmt),
                 Err(e) => {
                     self.errors.push(e.clone());
-                    self.synchronize(); 
+                    self.synchronize();
                 }
             }
         }
-    
+
         Ok(statements)
     }
-    
 
     fn statement(&mut self) -> Result<Stmt, ParseError> {
         if self.match_tokens(&[PRINT]) {
@@ -251,6 +252,7 @@ impl Parser {
 
     fn report_error(&mut self, error: ParseError) -> ParseError {
         self.errors.push(error.clone());
+        Color::ecprintln(&format!("{}", error), Color::Red);
         error
     }
 
@@ -258,14 +260,7 @@ impl Parser {
         self.advance();
         while !self.is_at_end() {
             match self.peek().t_type {
-                CLASS
-                | FUN
-                | VAR
-                | FOR
-                | IF
-                | WHILE
-                | PRINT
-                | RETURN => return,
+                CLASS | FUN | VAR | FOR | IF | WHILE | PRINT | RETURN => return,
                 _ => self.advance(),
             };
         }

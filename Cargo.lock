@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "Lox-Interpreter-Rust"
+name = "rust_lox_interpreter"
 version = "0.1.0"
