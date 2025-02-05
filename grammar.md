@@ -1,4 +1,12 @@
 ```
+program        → statement* EOF ;
+
+statement      → exprStmt
+               | printStmt ;
+
+exprStmt       → expression ";" ;
+printStmt      → "print" expression ";" ;
+
 expression     → ternary ;
 ternary        → comma ("?" expression ":" ternary)?;
 comma          → equality ( "," equality )* ;
@@ -10,6 +18,7 @@ unary          → ( "!" | "-" ) unary
                | primary ;
 primary        → NUMBER | STRING | "true" | "false" | "nil"
                | "(" expression ")" ;
+
 ```
 
 

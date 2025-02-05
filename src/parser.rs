@@ -1,21 +1,18 @@
-use crate::error_reporter::ErrorReporter;
 use crate::parse_error::ParseError;
 use crate::TokenType::*;
 use crate::{expression::*, token::Token, token_type::TokenType};
 
-pub struct Parser<'a> {
+pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
-    error_reporter: &'a mut ErrorReporter,
     errors: Vec<ParseError>
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(tokens: Vec<Token>, error_reporter: &'a mut ErrorReporter) -> Self {
+impl Parser {
+    pub fn new(tokens: Vec<Token>) -> Self {
         Self {
             tokens,
             current: 0,
-            error_reporter,
             errors: vec![]
         }
     }

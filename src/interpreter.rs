@@ -30,6 +30,9 @@ impl Visitor<LiteralValue> for Interpreter {
             (TokenType::PLUS, LiteralValue::String(s1), LiteralValue::String(s2)) => {
                 Ok(LiteralValue::String(format!("{}{}", s1, s2)))
             }
+            (TokenType::PLUS, LiteralValue::String(s1), LiteralValue::Number(n)) => {
+                Ok(LiteralValue::String(format!("{}{}", s1, n)))
+            }
             (TokenType::MINUS, LiteralValue::Number(n1), LiteralValue::Number(n2)) => {
                 Ok(LiteralValue::Number(n1 - n2))
             }
@@ -101,7 +104,7 @@ impl Interpreter {
         }
     }
 
-    fn stringify(lit: &LiteralValue) -> String {
+    fn stringify(&self, lit: &LiteralValue) -> String {
         match lit {
             LiteralValue::Nil => "nil".to_string(),
             LiteralValue::Number(n) => n.to_string(),

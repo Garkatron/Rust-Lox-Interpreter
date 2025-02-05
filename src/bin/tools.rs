@@ -16,11 +16,9 @@ fn main() -> io::Result<()> {
     // Asegúrate de que el directorio de salida existe
     create_dir_all(output_dir)?;
 
-    define_ast(output_dir, "Expression", vec![
-        "Binary   : Expr left, Token operator, Expr right",
-        "Grouping : Expr expression",
-        "Literal  : Any value",
-        "Unary    : Token operator, Expr right",
+    define_ast(output_dir, "Stmt", vec![
+        "Expression : Expr expression",
+        "Print      : Expr expression"
     ])?;
 
     Ok(())

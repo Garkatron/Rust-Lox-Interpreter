@@ -1,4 +1,3 @@
-use crate::ast_utils::ast_printer::AstPrinter;
 use crate::error_reporter::ErrorReporter;
 use crate::interpreter::Interpreter;
 use crate::parser::Parser;
@@ -27,7 +26,7 @@ pub struct Lox {
 impl Lox {
     pub fn new() -> Self {
         Self {
-            error_reporter: ErrorReporter::new()
+            error_reporter: ErrorReporter::new(),
         }
     }
 
@@ -61,7 +60,7 @@ impl Lox {
     fn run_prompt(&mut self) {
         // Clear stdout
         println!("Clear terminal");
-        
+
         // let _ = io::stdout().flush();
         // Flush out
         std::io::stdout().flush().unwrap();
@@ -88,41 +87,48 @@ impl Lox {
             self.error_reporter.reset()
         }
     }
-
     fn run(&mut self, source: String) {
+        println!("\n========== EJECUTANDO CÓDIGO ==========");
+        println!(
+            "Código fuente:\n{}
+",
+            source
+        );
+
         let mut scanner: Scanner = Scanner::new(source.clone(), &mut self.error_reporter);
         let tokens: Vec<Token> = scanner.scan_tokens();
-    
-        let mut parser = Parser::new(tokens.clone(), &mut self.error_reporter);
-        
-        println!("{}", source);
 
-        println!("---------------TOKEN--------------");
-
-        for token in tokens.clone() {
-            println!("{}",token);
+        println!("\n---------- TOKENS ESCANEADOS ----------");
+        for token in &tokens {
+            println!("{}", token);
         }
+        println!("--------------------------------------");
 
-        println!("----------------------------------");
+        let mut parser = Parser::new(tokens.clone());
 
         match parser.parse() {
             Ok(expr) => {
                 if self.error_reporter.had_error {
+                    println!("\n❌ Se encontraron errores durante el análisis.");
                     return;
                 }
-                println!("{}", expr.clone());
-                
+                println!("\n✅ Árbol de sintaxis abstracta generado:");
+                println!("{}", expr);
+
+                println!("\n========== RESULTADO ==========");
+
                 match Interpreter.interpret(&expr) {
                     Ok(r) => {
-                        println!("RESULT: {}", r)
+                        println!("\n{}", r);
                     }
-                    Err(e)=>{println!("ERROR: {}", e)}
+                    Err(e) => {
+                        println!("\n❌ ERROR en interpretación: {}", e);
+                    }
                 }
             }
             Err(e) => {
-                eprintln!("Error parsing expr: {:?}", e);
+                eprintln!("\n❌ Error al analizar la expresión: {:?}", e);
             }
         }
     }
-    
 }
