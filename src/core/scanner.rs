@@ -1,11 +1,9 @@
 use std::collections::HashMap;
-use crate::error_reporter::ErrorReporter;
-use crate::expression::LiteralValue;
-use crate::token::Token;
-use crate::token_type::TokenType;
-use crate::token_type::TokenType::*;
 
-pub struct Scanner<'a> {
+use super::{expression::LiteralValue, token::Token, token_type::TokenType::{self, *}};
+
+
+pub struct Scanner {
     source: String,
     tokens: Vec<Token>,
     
@@ -14,13 +12,12 @@ pub struct Scanner<'a> {
     current: usize,
     line: usize,
     
-    keywords: HashMap<String, TokenType>,
-    error_reporter: &'a mut ErrorReporter,
+    keywords: HashMap<String, TokenType>
 }
 
-impl<'a> Scanner<'a> {
+impl Scanner {
 
-    pub fn new(source: String, error_reporter: &'a mut ErrorReporter ) -> Self {
+    pub fn new(source: String) -> Self {
         let mut keywords = HashMap::new();
         keywords.insert("and".to_string(),AND);
         keywords.insert("class".to_string(),CLASS);
@@ -45,7 +42,6 @@ impl<'a> Scanner<'a> {
             current: 0,
             line: 1,
             keywords,
-            error_reporter,
         }
     }
 
@@ -128,7 +124,7 @@ impl<'a> Scanner<'a> {
                         }
                         self.advance();
                     }
-                    self.error_reporter.error(self.line,"Unfinished multiline comment.")                                        
+                    self.error("[SCANNER][ERROR]: Unfinished multiline comment.");
                 } else if self.char_match('/') {
                     while self.peek() != '\n' && !self.is_at_end() {
                         self.advance();
@@ -160,7 +156,7 @@ impl<'a> Scanner<'a> {
                 } else if Self::is_alpha(c) {
                     self.identifier()
                 } else {
-                    self.error_reporter.error(self.line,"Unexpected character.")
+                    self.error("[SCANNER][ERROR]: Unexpected character.");
                 }
 
             }
@@ -198,7 +194,8 @@ impl<'a> Scanner<'a> {
         
         // If not string closed 
         if self.is_at_end() {
-            self.error_reporter.error(self.line, "Unterminated String");
+            self.error("[SCANNER][ERROR]: Unterminated String");
+            return;
         }
         
         // The closing "
@@ -212,44 +209,47 @@ impl<'a> Scanner<'a> {
     
     fn char_match(&mut self, expected: char) -> bool {
         if self.is_at_end() {return false}
-        let c = self.source.chars().nth(self.current).expect("Error on char_match");
-        if c != expected { return false }
-        self.current += 1;
-        true
+
+        self.source.chars().nth(self.current).map_or(false, |c| {
+            if c == expected {
+                self.current += 1;
+                true
+            } else {
+                false
+            }
+        })
     }
     
     fn peek(&self) -> char {
         if self.is_at_end() {return '\0'}
-        self.source.chars().nth(self.current).expect("Error on peek")
+        self.source.chars().nth(self.current).unwrap_or('\0')
     }
     
     fn peek_next(&mut self) -> char {
-        if self.current + 1 >= self.source.len() {
-            return '\0'
-        }
-        self.source.chars().nth(self.current + 1).expect("Error on peek_next")
+        if self.current + 1 >= self.source.len() {return '\0'}
+        self.source.chars().nth(self.current + 1).unwrap_or('\0')
     }
     
-    fn is_alpha_numeric(c: char) -> bool {
-        return Self::is_alpha(c) || Self::is_digit(c);
-    }
+    fn is_alpha_numeric(c: char) -> bool {return Self::is_alpha(c) || Self::is_digit(c);}
     
-    fn is_alpha(c: char) -> bool {
-        return (c >= 'a' && c <= 'z') ||
-            (c >= 'A' && c <= 'Z') ||
-            c == '_';
-    }
+    fn is_alpha(c: char) -> bool {return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';}
 
-    fn is_digit(c: char) -> bool {
-        c >= '0' && c <= '9'
-    }
+    fn is_digit(c: char) -> bool {c >= '0' && c <= '9'}
     
     fn advance(&mut self) -> char {
-        let current_char = self.source.chars().nth(self.current).expect("Error on advance");
+        let current_char = self.source.chars().nth(self.current).unwrap_or('\0');
         self.current += 1;
         current_char
     }
     
+    fn error(&mut self, message: &str) {
+        self.report(self.line," ".to_string(), message)
+    }
+
+    fn report(&mut self, line: usize, where_is: String, message: &str){
+        println!("Error {} at line {}\nMessage: {} ", where_is, line, message);
+    }
+
     fn add_token(&mut self, t_type: TokenType) {
         let lexeme = self.source[self.start..self.current].to_string();
         self.tokens.push(Token::from(t_type, lexeme, LiteralValue::Nil, self.line));

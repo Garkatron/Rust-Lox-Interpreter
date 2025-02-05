@@ -1,4 +1,3 @@
-use crate::error_reporter::ErrorReporter;
 use crate::interpreter::Interpreter;
 use crate::parser::Parser;
 use crate::scanner::Scanner;
@@ -19,15 +18,13 @@ macro_rules! read_line {
 
 // Lox
 pub struct Lox {
-    error_reporter: ErrorReporter,
+
 }
 
 //pub static mut had_error: bool = false;
 impl Lox {
     pub fn new() -> Self {
-        Self {
-            error_reporter: ErrorReporter::new(),
-        }
+        Self {  }
     }
 
     // Init method
@@ -100,46 +97,34 @@ impl Lox {
 
             // Reset error
             // had_error = false;
-            self.error_reporter.reset()
+            
         }
     }
     fn run(&mut self, source: String) {
-        let mut scanner: Scanner = Scanner::new(source.clone(), &mut self.error_reporter);
+        let mut scanner: Scanner = Scanner::new(source.clone());
         let tokens: Vec<Token> = scanner.scan_tokens();
 
         println!("\n---------- TOKENS ESCANEADOS ----------");
         for token in &tokens {
             println!("{}", token);
         }
-        println!("--------------------------------------");
-
         let mut parser = Parser::new(tokens.clone());
 
         match parser.parse() {
             Ok(statements) => {
-                if self.error_reporter.had_error {
-                    println!("\n❌ Se encontraron errores durante el análisis.");
-                    return;
-                }
-                println!("\n✅ Árbol de sintaxis abstracta generado:");
-
-                for stat in &statements {
-                    println!("{:?}", stat);
-                }
-
-                println!("\n========== RESULTADO ==========");
+                println!("========== RESULTADO ==========");
 
                 match Interpreter.interpret(statements) {
                     Ok(_) => {
                         println!("End");
                     }
                     Err(e) => {
-                        println!("\n❌ ERROR en interpretación: {}", e);
+                        println!("\n❌ [ERROR]: on interpretation: {}", e);
                     }
                 }
             }
             Err(e) => {
-                eprintln!("\n❌ Error al analizar la expresión: {:?}", e);
+                eprintln!("\n❌ [ERROR]: on parsing {:?}", e);
             }
         }
     }

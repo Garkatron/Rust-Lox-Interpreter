@@ -1,6 +1,7 @@
 use std::fmt::Display;
-use crate::expression::LiteralValue;
-use crate::token_type::TokenType;
+
+use super::{expression::LiteralValue, token_type::TokenType};
+
 
 #[derive(Debug, Clone)]
 pub struct Token {

@@ -1,10 +1,8 @@
-use crate::expression::{self, Expr, Visitor as ExpressionVisitor};
-use crate::stmt::{Stmt, Visitor as StatementVisitor};
-use crate::token_type::TokenType;
-use crate::LiteralValue;
-use crate::Token;
-use crate::runtime_error::RuntimeError;
-
+use super::expression::Expr;
+use super::stmt::Stmt;
+use super::token::Token;
+use super::{expression::LiteralValue, runtime_error::RuntimeError, token_type::TokenType};
+use super::{expression::Visitor as ExpressionVisitor, stmt::Visitor as StatementVisitor};
 pub struct Interpreter;
 
 impl ExpressionVisitor<LiteralValue> for Interpreter {

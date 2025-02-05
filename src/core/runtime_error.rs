@@ -1,6 +1,7 @@
 use std::fmt;
 
-use crate::token::Token;
+use super::token::Token;
+
 
 #[derive(Debug, Clone)]
 pub enum RuntimeError {

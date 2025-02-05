@@ -1,5 +1,4 @@
-use crate::expression::Expr;
-use crate::runtime_error::RuntimeError;
+use super::{expression::Expr, runtime_error::RuntimeError};
 
 #[derive(Clone, Debug)]
 pub enum Stmt {

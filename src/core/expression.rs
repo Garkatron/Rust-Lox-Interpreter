@@ -1,5 +1,6 @@
-use crate::{runtime_error::RuntimeError, token::Token};
 use std::fmt;
+
+use super::{runtime_error::RuntimeError, token::Token};
 
 #[derive(Clone, Debug)]
 pub enum Expr {

@@ -1,7 +1,6 @@
-use crate::parse_error::ParseError;
-use crate::stmt::Stmt;
-use crate::TokenType::*;
-use crate::{expression::*, token::Token, token_type::TokenType};
+use super::expression::LiteralValue;
+use super::{expression::Expr, parse_error::ParseError, stmt::Stmt, token::Token};
+use super::token_type::TokenType::{self, *};
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -259,14 +258,14 @@ impl Parser {
         self.advance();
         while !self.is_at_end() {
             match self.peek().t_type {
-                TokenType::CLASS
-                | TokenType::FUN
-                | TokenType::VAR
-                | TokenType::FOR
-                | TokenType::IF
-                | TokenType::WHILE
-                | TokenType::PRINT
-                | TokenType::RETURN => return,
+                CLASS
+                | FUN
+                | VAR
+                | FOR
+                | IF
+                | WHILE
+                | PRINT
+                | RETURN => return,
                 _ => self.advance(),
             };
         }
