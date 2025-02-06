@@ -6,6 +6,7 @@ use super::token::Token;
 pub enum RuntimeError {
     BadOperator(Token, String),
     BadStatement(String),
+    UndefinedVariable(Token)
 }
 
 impl fmt::Display for RuntimeError {
@@ -16,6 +17,9 @@ impl fmt::Display for RuntimeError {
             }
             RuntimeError::BadStatement(message) => {
                 write!(f, "Bad statement: {}", message)
+            }
+            RuntimeError::UndefinedVariable(token) => {
+                write!(f, "Undefined variable: {} ", token.lexeme)
             }
         }
     }

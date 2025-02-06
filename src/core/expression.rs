@@ -28,6 +28,9 @@ pub enum Expr {
         then_branch: Box<Expr>,
         else_branch: Box<Expr>,
     },
+    Variable {
+        name: Token
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -50,6 +53,7 @@ pub trait Visitor<R> {
         then_branch: &Expr,
         else_branch: &Expr,
     ) -> Result<R, RuntimeError>;
+    fn visit_variable(&self, name: &Token) -> Result<R, RuntimeError>;
 }
 
 impl Expr {
@@ -69,6 +73,7 @@ impl Expr {
                 then_branch,
                 else_branch,
             } => visitor.visit_ternary(condition, then_branch, else_branch),
+            Expr::Variable { name } => {visitor.visit_variable(name)}
         }
     }
 }

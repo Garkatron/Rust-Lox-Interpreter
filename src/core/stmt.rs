@@ -1,13 +1,15 @@
-use super::{expression::Expr, runtime_error::RuntimeError};
+use super::{expression::Expr, runtime_error::RuntimeError, token::Token};
 
 #[derive(Clone, Debug)]
 pub enum Stmt {
     Expression { expression: Box<Expr> },
     Print { expression: Box<Expr> },
+    Var { name: Token, initializer: Box<Expr> },
 }
 pub trait Visitor<R> {
     fn visit_expression(&self, stmt: &Stmt) -> Result<R, RuntimeError>;
     fn visit_print(&self, stmt: &Stmt) -> Result<R, RuntimeError>;
+    fn visit_var(&self, stmt: &Stmt) -> Result<R, RuntimeError>;
 }
 
 impl Stmt {
@@ -15,6 +17,7 @@ impl Stmt {
         match self {
             Stmt::Expression { .. } => visitor.visit_expression(self),
             Stmt::Print { .. } => visitor.visit_print(self),
+            Stmt::Var { .. } => visitor.visit_var(self),
         }
     }
 }

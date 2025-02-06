@@ -15,7 +15,9 @@ pub enum ParseError {
     ExpectedTernaryBranch(usize, usize),
     MissingLeftOperand(usize),
     EspectSemicolonAfterValue(usize),
-    EspectSemicolonAfterExpression(usize)
+    EspectSemicolonAfterExpression(usize),
+    ExpectedVariableName(usize),
+    ExpectedVariableDeclaration(usize),
 }
 
 impl fmt::Display for ParseError {
@@ -56,6 +58,12 @@ impl fmt::Display for ParseError {
             }
             ParseError::EspectSemicolonAfterExpression(line) => {
                 write!(f, "Expect ';' after expression. At line: {}", line)
+            }
+            ParseError::ExpectedVariableName(line) => {
+                write!(f, "Expect variable name. At line: {}", line)
+            }
+            ParseError::ExpectedVariableDeclaration(line) => {
+                write!(f, "Expect variable declaration. At line: {}", line)
             }
         }
     }

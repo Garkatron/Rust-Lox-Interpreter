@@ -107,6 +107,9 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
             self.evaluate(else_branch)
         }
     }
+    fn visit_variable(&self, name: &Token) -> Result<LiteralValue, RuntimeError> {
+        Ok(LiteralValue::Nil)
+    }
 }
 impl StatementVisitor<()> for Interpreter {
     fn visit_print(&self, stmt: &Stmt) -> Result<(), RuntimeError> {
@@ -131,6 +134,9 @@ impl StatementVisitor<()> for Interpreter {
                 "Expected expression".to_string(),
             )),
         }
+    }
+    fn visit_var(&self, stmt: &Stmt) -> Result<(), RuntimeError> {
+        Ok(())
     }
 }
 

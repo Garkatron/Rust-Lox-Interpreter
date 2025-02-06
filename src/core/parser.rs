@@ -23,7 +23,7 @@ impl Parser {
         let mut statements: Vec<Stmt> = vec![];
 
         while !self.is_at_end() {
-            match self.statement() {
+            match self.declaration() {
                 Ok(stmt) => statements.push(stmt),
                 Err(e) => {
                     self.errors.push(e.clone());
@@ -33,6 +33,32 @@ impl Parser {
         }
 
         Ok(statements)
+    }
+
+    fn declaration(&mut self) -> Result<Stmt, ParseError> {
+        if self.match_tokens(&[VAR]) {
+            return self.var_declaration();
+        };
+
+        self.statement()
+    }
+    fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
+        let name = self.consume(IDENTIFIER, ParseError::ExpectedVariableName(0))?;
+
+        let mut initializer = Expr::Literal {
+            value: LiteralValue::Nil,
+        }; // ! ALL VARS NOT INITIALIZED ARE NULL
+
+        if self.match_tokens(&[EQUAL]) {
+            initializer = self.expression()?;
+        }
+
+        self.consume(SEMICOLON, ParseError::ExpectedVariableDeclaration(0))?;
+
+        Ok(Stmt::Var {
+            name,
+            initializer: Box::new(initializer),
+        })
     }
 
     fn statement(&mut self) -> Result<Stmt, ParseError> {
@@ -203,6 +229,9 @@ impl Parser {
             return Ok(Expr::Grouping {
                 expression: Box::new(expr),
             });
+        }
+        if self.match_tokens(&[IDENTIFIER]) {
+            return Ok(Expr::Variable { name: self.previous() })
         }
 
         Err(self.report_error(ParseError::InvalidExpression(
