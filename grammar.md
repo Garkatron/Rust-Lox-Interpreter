@@ -1,11 +1,16 @@
 ```
-program        → statement* EOF ;
+program        → declaration* EOF ;
+
+declaration    → varDecl
+               | statement ;
 
 statement      → exprStmt
                | printStmt ;
 
 exprStmt       → expression ";" ;
 printStmt      → "print" expression ";" ;
+
+varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 
 expression     → ternary ;
 ternary        → comma ("?" expression ":" ternary)?;
@@ -16,8 +21,11 @@ term           → factor ( ( "-" | "+" ) factor )* ;
 factor         → unary ( ( "/" | "*" ) unary )* ;
 unary          → ( "!" | "-" ) unary
                | primary ;
-primary        → NUMBER | STRING | "true" | "false" | "nil"
-               | "(" expression ")" ;
+
+primary        → "true" | "false" | "nil"
+               | NUMBER | STRING
+               | "(" expression ")"
+               | IDENTIFIER ;
 
 ```
 
