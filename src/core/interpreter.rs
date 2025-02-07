@@ -1,9 +1,12 @@
+use super::environment::Environment;
 use super::expression::Expr;
 use super::stmt::Stmt;
 use super::token::Token;
 use super::{expression::LiteralValue, runtime_error::RuntimeError, token_type::TokenType};
 use super::{expression::Visitor as ExpressionVisitor, stmt::Visitor as StatementVisitor};
-pub struct Interpreter;
+pub struct Interpreter {
+    environment: Environment
+}
 
 impl ExpressionVisitor<LiteralValue> for Interpreter {
     fn visit_unary(&self, operator: &Token, right: &Expr) -> Result<LiteralValue, RuntimeError> {
@@ -108,7 +111,7 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         }
     }
     fn visit_variable(&self, name: &Token) -> Result<LiteralValue, RuntimeError> {
-        Ok(LiteralValue::Nil)
+        Ok(self.environment.get(name)?)
     }
 }
 impl StatementVisitor<()> for Interpreter {
@@ -135,24 +138,39 @@ impl StatementVisitor<()> for Interpreter {
             )),
         }
     }
-    fn visit_var(&self, stmt: &Stmt) -> Result<(), RuntimeError> {
-        Ok(())
+    fn visit_var(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
+        if let Stmt::Var { name, initializer } = stmt {
+            let value = self.evaluate(&initializer)?;
+
+            return self.environment.define(&name.lexeme, value);
+            
+        } else {
+            Err(RuntimeError::BadStatement("Expected variable declaration".to_string()))
+        }
     }
+    
 }
 
 impl Interpreter {
+
+    pub fn new() -> Self {
+        Self {
+            environment: Environment::new()
+        }
+    }
+
     fn evaluate(&self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         expr.accept(self)
     }
 
-    pub fn interpret(&self, statements: Vec<Stmt>) -> Result<(), RuntimeError> {
+    pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<(), RuntimeError> {
         for statement in statements {
             self.execute(statement)?;
         }
         Ok(())
     }
 
-    fn execute(&self, stmt: Stmt) -> Result<(), RuntimeError> {
+    fn execute(&mut self, stmt: Stmt) -> Result<(), RuntimeError> {
         stmt.accept(self)?;
         Ok(())
     }

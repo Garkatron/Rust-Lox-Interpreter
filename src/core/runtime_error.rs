@@ -6,7 +6,8 @@ use super::token::Token;
 pub enum RuntimeError {
     BadOperator(Token, String),
     BadStatement(String),
-    UndefinedVariable(Token)
+    UndefinedVariable(Token),
+    RedefinedVariable(String),
 }
 
 impl fmt::Display for RuntimeError {
@@ -20,6 +21,9 @@ impl fmt::Display for RuntimeError {
             }
             RuntimeError::UndefinedVariable(token) => {
                 write!(f, "Undefined variable: {} ", token.lexeme)
+            }
+            RuntimeError::RedefinedVariable(name) => {
+                write!(f, "Variable '{}' is already defined and cannot be redefined.", name)
             }
         }
     }

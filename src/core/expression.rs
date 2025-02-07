@@ -118,6 +118,9 @@ impl fmt::Display for Expr {
             } => {
                 write!(f, "({}) ? {} : {}", condition, then_branch, else_branch)
             }
+            Expr::Variable { name } => {
+                write!(f, "(var {})", name.lexeme)
+            }
         }
     }
 }

@@ -1,6 +1,3 @@
-print "one";
-print true;
-print -1+2;
-print (((2 + 1)+2+2+2+2)/2)*20;
-print "dada";
-print ((2 + 1)+2+2+2+2)/2;
+var a = 1;
+var b = 2;
+print a + b;

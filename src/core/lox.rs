@@ -110,12 +110,13 @@ impl Lox {
         }
 
         let mut parser = Parser::new(tokens.clone());
+        let mut interpreter = Interpreter::new();
 
         match parser.parse() {
             Ok(statements) => {
                 println!("========== RESULTADO ==========");
 
-                match Interpreter.interpret(statements) {
+                match interpreter.interpret(statements) {
                     Ok(_) => {
                         Self::print_message("End");
                     }
