@@ -7,8 +7,8 @@ pub enum Stmt {
     Var { name: Token, initializer: Box<Expr> },
 }
 pub trait Visitor<R> {
-    fn visit_expression(&self, stmt: &Stmt) -> Result<R, RuntimeError>;
-    fn visit_print(&self, stmt: &Stmt) -> Result<R, RuntimeError>;
+    fn visit_expression(&mut self, stmt: &Stmt) -> Result<R, RuntimeError>;
+    fn visit_print(&mut self, stmt: &Stmt) -> Result<R, RuntimeError>;
     fn visit_var(&mut self, stmt: &Stmt) -> Result<R, RuntimeError>;
 }
 

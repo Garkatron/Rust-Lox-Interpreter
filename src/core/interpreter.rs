@@ -9,7 +9,7 @@ pub struct Interpreter {
 }
 
 impl ExpressionVisitor<LiteralValue> for Interpreter {
-    fn visit_unary(&self, operator: &Token, right: &Expr) -> Result<LiteralValue, RuntimeError> {
+    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Result<LiteralValue, RuntimeError> {
         let lit = self.evaluate(right)?;
         match operator.t_type {
             TokenType::MINUS => match lit {
@@ -28,7 +28,7 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
     }
 
     fn visit_binary(
-        &self,
+        &mut self,
         left: &Expr,
         operator: &Token,
         right: &Expr,
@@ -48,6 +48,9 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
             }
             (TokenType::MINUS, LiteralValue::Number(n1), LiteralValue::Number(n2)) => {
                 Ok(LiteralValue::Number(n1 - n2))
+            }
+            (TokenType::MINUS, LiteralValue::String(s1), LiteralValue::String(s2)) => {
+                Ok(LiteralValue::String(s1.replacen(s2, "", 1)))
             }
             (TokenType::SLASH, LiteralValue::Number(n1), LiteralValue::Number(n2)) => {
                 if *n2 == 0.0 {
@@ -86,36 +89,45 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         }
     }
 
-    fn visit_literal(&self, value: &LiteralValue) -> Result<LiteralValue, RuntimeError> {
+    fn visit_literal(&mut self, value: &LiteralValue) -> Result<LiteralValue, RuntimeError> {
         Ok(value.clone())
     }
 
-    fn visit_grouping(&self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
+    fn visit_grouping(&mut self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         self.evaluate(expr)
     }
 
-    fn visit_comma(&self, _: &Expr, right: &Expr) -> Result<LiteralValue, RuntimeError> {
+    fn visit_comma(&mut self, _: &Expr, right: &Expr) -> Result<LiteralValue, RuntimeError> {
         self.evaluate(right)
     }
 
     fn visit_ternary(
-        &self,
+        &mut self,
         condition: &Expr,
         then_branch: &Expr,
         else_branch: &Expr,
     ) -> Result<LiteralValue, RuntimeError> {
-        if self.is_truthy(self.evaluate(condition)?) {
-            self.evaluate(then_branch)
+        let condition_value = self.evaluate(condition)?;
+    
+        if self.is_truthy(condition_value) {
+            self.evaluate(then_branch) 
         } else {
             self.evaluate(else_branch)
         }
     }
-    fn visit_variable(&self, name: &Token) -> Result<LiteralValue, RuntimeError> {
+    
+    fn visit_variable(&mut self, name: &Token) -> Result<LiteralValue, RuntimeError> {
         Ok(self.environment.get(name)?)
+    }
+    
+    fn visit_assing(&mut self, name: &Token, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
+        let value = self.mut_evaluate(expr)?;
+        self.environment.assing(name, value.clone())?;
+        Ok(value)
     }
 }
 impl StatementVisitor<()> for Interpreter {
-    fn visit_print(&self, stmt: &Stmt) -> Result<(), RuntimeError> {
+    fn visit_print(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
         match stmt {
             Stmt::Print { expression } => {
                 let value = self.evaluate(&expression)?;
@@ -126,7 +138,7 @@ impl StatementVisitor<()> for Interpreter {
         }
     }
 
-    fn visit_expression(&self, stmt: &Stmt) -> Result<(), RuntimeError> {
+    fn visit_expression(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
         match stmt {
             Stmt::Expression { expression } => {
                 let value = self.evaluate(&expression)?;
@@ -159,7 +171,12 @@ impl Interpreter {
         }
     }
 
-    fn evaluate(&self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
+    fn evaluate(&mut self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
+        expr.accept(self)
+    }
+
+    
+    fn mut_evaluate(&mut self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         expr.accept(self)
     }
 

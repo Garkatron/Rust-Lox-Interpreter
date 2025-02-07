@@ -30,6 +30,10 @@ pub enum Expr {
     },
     Variable {
         name: Token
+    },
+    Assing {
+        name: Token,
+        value: Box<Expr>
     }
 }
 
@@ -42,22 +46,23 @@ pub enum LiteralValue {
 }
 
 pub trait Visitor<R> {
-    fn visit_binary(&self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
-    fn visit_grouping(&self, expression: &Expr) -> Result<R, RuntimeError>;
-    fn visit_literal(&self, value: &LiteralValue) -> Result<R, RuntimeError>;
-    fn visit_comma(&self, left: &Expr, right: &Expr) -> Result<R, RuntimeError>;
-    fn visit_unary(&self, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
+    fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
+    fn visit_grouping(&mut self, expression: &Expr) -> Result<R, RuntimeError>;
+    fn visit_literal(&mut self, value: &LiteralValue) -> Result<R, RuntimeError>;
+    fn visit_comma(&mut self, left: &Expr, right: &Expr) -> Result<R, RuntimeError>;
+    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
     fn visit_ternary(
-        &self,
+        &mut self,
         condition: &Expr,
         then_branch: &Expr,
         else_branch: &Expr,
     ) -> Result<R, RuntimeError>;
-    fn visit_variable(&self, name: &Token) -> Result<R, RuntimeError>;
+    fn visit_variable(&mut self, name: &Token) -> Result<R, RuntimeError>;
+    fn visit_assing(&mut self, name: &Token, value: &Expr) -> Result<R, RuntimeError>;
 }
 
 impl Expr {
-    pub fn accept<R>(&self, visitor: &dyn Visitor<R>) -> Result<R, RuntimeError> {
+    pub fn accept<R>(&self, visitor: &mut dyn Visitor<R>) -> Result<R, RuntimeError> {
         match self {
             Expr::Binary {
                 left,
@@ -74,8 +79,12 @@ impl Expr {
                 else_branch,
             } => visitor.visit_ternary(condition, then_branch, else_branch),
             Expr::Variable { name } => {visitor.visit_variable(name)}
+            Expr::Assing { name, value } => {
+                visitor.visit_assing(name, value)
+            }
         }
     }
+ 
 }
 
 impl fmt::Display for LiteralValue {
@@ -120,6 +129,9 @@ impl fmt::Display for Expr {
             }
             Expr::Variable { name } => {
                 write!(f, "(var {})", name.lexeme)
+            }
+            Expr::Assing { name, value } => {
+                write!(f, "({} = {})", name, value)
             }
         }
     }

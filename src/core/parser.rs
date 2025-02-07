@@ -77,7 +77,23 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Result<Expr, ParseError> {
-        self.ternary()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> Result<Expr, ParseError> {
+        let expr = self.ternary()?;
+        if self.match_tokens(&[EQUAL]) {
+            let _equals = self.previous();
+            let value = self.assignment()?;
+            
+            match expr {
+                Expr::Variable { name } => {
+                    return Ok(Expr::Assing { name, value: Box::new(value) })
+                }
+                _ => Color::ecprintln(&ParseError::InvalidAssignmentTarget(0).to_string(), Color::Red),
+            }
+        }
+        Ok(expr)
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, ParseError> {

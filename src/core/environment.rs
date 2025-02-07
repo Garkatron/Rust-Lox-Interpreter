@@ -27,4 +27,12 @@ impl Environment {
             Err(RuntimeError::UndefinedVariable(name.clone()))
         }
     }
+
+    pub fn assing(&mut self, name: &Token, value: LiteralValue) -> Result<(), RuntimeError> {
+        if self.values.contains_key(&name.lexeme) {
+            self.values.insert(name.lexeme.clone(), value);
+            return Ok(())
+        }
+        Err(RuntimeError::UndefinedVariable(name.clone()))
+    }
 }

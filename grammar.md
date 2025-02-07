@@ -12,7 +12,10 @@ printStmt      → "print" expression ";" ;
 
 varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 
-expression     → ternary ;
+expression     → assignment ;
+assignment     → IDENTIFIER "=" assignment
+               | ternary ;
+
 ternary        → comma ("?" expression ":" ternary)?;
 comma          → equality ( "," equality )* ;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
