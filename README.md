@@ -1,32 +1,40 @@
-# Rox  
-### 🦀 A **Rust**-coded _Lox_ interpreter  
+# Rox
+
+###### _Unfinished_
+
+### 🦀 A **Rust**-coded _Lox_ interpreter
 
 ---
 
-## 🚀 Features  
+## 🚀 Features
 
-### ✅ **Tokens**  
-### ✅ **Grammar**  
-   - ✅ **`EXTRA`**: Comma Operator  
-   - ✅ **`EXTRA`**: Ternary Operator  
+### ✅ **Tokens**
 
-### ✅ **Lexer**  
-   - ✅ **`EXTRA`**: Multiline Comments  
+### ✅ **Grammar**
 
-### ✅ **Parser**  
+- ✅ **`EXTRA`**: Comma Operator
+- ✅ **`EXTRA`**: Ternary Operator
 
-### ✅ **Expressions**  
+### ✅ **Lexer**
 
-### ✅ **Statements**  
+- ✅ **`EXTRA`**: Multiline Comments
 
-### ✅ **Interpreter**  
-   - ✅ Global Variables  
-   - ❌ **`EXTRA`**: Comma Operator  
-   - ❌ **`EXTRA`**: Ternary Operator  
+### ✅ **Parser**
 
-### ❌ **Lox**  
+### ✅ **Expressions**
+
+### ✅ **Statements**
+
+### ✅ **Interpreter**
+
+- ✅ Global Variables
+- ❌ **`EXTRA`**: Comma Operator
+- **✅ `EXTRA`**: Ternary Operator
+
+### ❌ **Lox**
 
 ---
 
-## 📚 Based on  
-📖 [Crafting Interpreters](https://craftinginterpreters.com)  
+## 📚 Based on
+
+📖 [Crafting Interpreters](https://craftinginterpreters.com)

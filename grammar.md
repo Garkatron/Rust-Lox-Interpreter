@@ -7,10 +7,17 @@ declaration    → varDecl
 statement      → exprStmt
                | ifStmt
                | printStmt
+               | whileStmt
+               | loopStmt
                | block ;
+
+whileStmt      → "while" "(" expression ")" statement ;
+               ( "else" statement )? ;
 
 ifStmt         → "if" "(" expression ")" statement
                ( "else" statement )? ;
+
+loopStmt       → "loop" statement
 
 block          → "{" declaration* "}" ;
 
@@ -42,7 +49,6 @@ primary        → "true" | "false" | "nil"
                | IDENTIFIER ;
 
 ```
-
 
 | Grammar notation | Code representation               |
 | ---------------- | --------------------------------- |

@@ -38,6 +38,7 @@ impl Scanner {
         keywords.insert("true".to_string(), TRUE);
         keywords.insert("var".to_string(), VAR);
         keywords.insert("while".to_string(), WHILE);
+        keywords.insert("loop".to_string(), LOOP);
 
         Self {
             source,

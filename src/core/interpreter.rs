@@ -138,69 +138,69 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
     }
 }
 impl StatementVisitor<()> for Interpreter {
-    fn visit_print(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
-        match stmt {
-            Stmt::Print { expression } => {
-                let value = self.evaluate(&expression)?;
-                println!("{}", self.stringify(&value));
-                Ok(())
-            }
-            _ => Err(RuntimeError::BadStatement("Expected Print".to_string())),
-        }
+    fn visit_expression(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
+        let value = self.evaluate(expression)?;
+        println!("{}", self.stringify(&value));
+        Ok(())
     }
 
-    fn visit_expression(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
-        match stmt {
-            Stmt::Expression { expression } => {
-                let value = self.evaluate(&expression)?;
-                println!("{}", self.stringify(&value));
-                Ok(())
-            }
-            _ => Err(RuntimeError::BadStatement(
-                "Expected expression".to_string(),
-            )),
-        }
+    fn visit_print(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
+        let value = self.evaluate(expression)?;
+        println!("{}", self.stringify(&value));
+        Ok(())
     }
-    fn visit_var(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
-        if let Stmt::Var { name, initializer } = stmt {
-            let value = self.evaluate(&initializer)?;
 
-            return self.environment.define(&name.lexeme, value);
-            
+    fn visit_var(&mut self, name: &Token, initializer: &Expr) -> Result<(), RuntimeError> {
+        let value = self.evaluate(initializer)?;
+        self.environment.define(&name.lexeme, value)?;
+        Ok(())
+    }
+
+    fn visit_block(&mut self, statements: &[Stmt]) -> Result<(), RuntimeError> {
+        self.execute_block(statements, Environment::new(Some(self.environment.clone())))
+    }
+
+    fn visit_if(
+        &mut self,
+        condition: &Expr,
+        then_branch: &Stmt,
+        else_branch: Option<&Stmt>,
+    ) -> Result<(), RuntimeError> {
+        let value = self.evaluate(condition)?;
+        if self.is_truthy(&value) {
+            self.execute(then_branch)
+        } else if let Some(t_else_branch) = else_branch {
+            self.execute(t_else_branch)
         } else {
-            Err(RuntimeError::BadStatement("Expected variable declaration".to_string()))
+            Ok(())
         }
     }
-    fn visit_block(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
-        match stmt {
-            Stmt::Block { statements } => {
-                self.execute_block(statements, Environment::new(Some(self.environment.clone())))
-            }
-            _ => {
-                Err(RuntimeError::BadStatement("Expected block".to_string()))
-            }
-        }
-    }
-    fn visit_if(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
-        match stmt {
-            Stmt::If { condition, then_branch, else_branch } => {
-                let value = self.evaluate(condition)?;
-                if self.is_truthy(&value) {
-                    self.execute(&then_branch)
-                } else if let Some(t_else_branch) = else_branch {
-                    self.execute(t_else_branch)
-                } else {
-                    Err(RuntimeError::BadStatement("Expected if".to_string()))
-                }
-            }
-            _ => {
-                Err(RuntimeError::BadStatement("Expected if".to_string()))
 
+    fn visit_while(&mut self, condition: &Expr, body: &Stmt, else_branch: Option<&Stmt>) -> Result<(), RuntimeError> {
+        let value = self.evaluate(condition)?;
+        while self.is_truthy(&value) {
+            
+            self.execute(&body)?;
+            
+        }
+        if let Some(t_else_branch) = else_branch {
+            while !self.is_truthy(&value) {
+                self.execute(t_else_branch)?;
             }
         }
+ 
+       
+        Ok(())
     }
-    
+    fn visit_loop(&mut self, body: &Stmt) -> Result<(), RuntimeError> {
+        loop {
+            self.execute(body)?;
+        }
+    }
 }
+
+    
+
 
 impl Interpreter {
 

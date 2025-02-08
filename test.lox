@@ -1,5 +1,3 @@
-if (false) {
-    print "then";
-} else {
-    print "else";
+loop {
+    print "test";
 }

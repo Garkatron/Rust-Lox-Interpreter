@@ -57,7 +57,7 @@ impl Parser {
 
         Ok(Stmt::Var {
             name,
-            initializer: Box::new(initializer),
+            initializer: *Box::new(initializer),
         })
     }
 
@@ -68,7 +68,12 @@ impl Parser {
         if self.match_tokens(&[PRINT]) {
             return self.print_statement();
         }
-
+        if self.match_tokens(&[WHILE]) {
+            return self.while_statement();
+        }
+        if self.match_tokens(&[LOOP]) {
+            return self.loop_statement();
+        }
         if self.match_tokens(&[LEFT_BRACE]) {
             return Ok(Stmt::Block { statements: self.block()? });
         }
@@ -76,11 +81,32 @@ impl Parser {
         return self.expression_statement();
     }
 
+
+    fn while_statement(&mut self) -> Result<Stmt, ParseError> {
+        self.consume(LEFT_PAREN, ParseError::ExpectedSomeTokenTypeAfterSomething(LEFT_PAREN,self.peek().line, "While".to_string()))?;
+
+        let condition = self.expression()?;
+
+        self.consume(RIGHT_PAREN, ParseError::ExpectedSomeTokenTypeAfterSomething(RIGHT_PAREN,self.peek().line, "While".to_string()))?;
+
+        let body = self.statement()?;
+
+        let mut else_branch= None;
+        
+        if self.match_tokens(&[ELSE]) {
+            else_branch = Some(Box::new(self.statement()?));
+        }
+
+        return Ok(Stmt::While { condition, body: Box::new(body), else_branch })
+
+    }
+
     fn if_statement(&mut self) -> Result<Stmt, ParseError> {
-        self.consume(LEFT_PAREN, ParseError::ExpectedLeftParenAfterIf(self.peek().line))?;
+        self.consume(LEFT_PAREN, ParseError::ExpectedSomeTokenTypeAfterSomething(LEFT_PAREN,self.peek().line, "If".to_string()))?;
+        
         let condition = self.expression()?;
         
-        self.consume(RIGHT_PAREN, ParseError::ExpectedRightParenAfterIf(self.peek().line))?;
+        self.consume(RIGHT_PAREN, ParseError::ExpectedSomeTokenTypeAfterSomething(RIGHT_PAREN,self.peek().line, "If".to_string()))?;
         
         let then_branch = self.statement()?;
         let mut else_branch= None;
@@ -89,8 +115,13 @@ impl Parser {
             else_branch = Some(Box::new(self.statement()?));
         }
 
-        return Ok(Stmt::If { condition: Box::new(condition), then_branch: Box::new(then_branch), else_branch })
+        return Ok(Stmt::If { condition: *Box::new(condition), then_branch: Box::new(then_branch), else_branch })
 
+    }
+
+    fn loop_statement(&mut self) -> Result<Stmt, ParseError> {
+        let body = self.statement()?;
+        Ok(Stmt::Loop { body: Box::new(body) })
     }
 
     fn block(&mut self) -> Result<Vec<Stmt>, ParseError> {
@@ -106,7 +137,7 @@ impl Parser {
         let value: Expr = self.expression()?;
         self.consume(SEMICOLON, ParseError::EspectSemicolonAfterValue(self.peek().line))?;
         Ok(Stmt::Print {
-            expression: Box::new(value),
+            expression: *Box::new(value),
         })
     }
 
@@ -155,7 +186,7 @@ impl Parser {
         let expr: Expr = self.expression()?;
         self.consume(SEMICOLON, ParseError::EspectSemicolonAfterExpression(self.peek().line))?;
         return Ok(Stmt::Expression {
-            expression: Box::new(expr),
+            expression: *Box::new(expr),
         });
     }
 

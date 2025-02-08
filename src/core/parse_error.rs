@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::token::Token;
+use super::{token::Token, token_type::TokenType};
 
 #[derive(Debug, Clone)]
 pub enum ParseError {
@@ -20,8 +20,7 @@ pub enum ParseError {
     ExpectedVariableDeclaration(usize),
     InvalidAssignmentTarget(usize),
     ExpectedRightBraceAfterBlock(usize),
-    ExpectedLeftParenAfterIf(usize),
-    ExpectedRightParenAfterIf(usize),
+    ExpectedSomeTokenTypeAfterSomething(TokenType, usize, String),
 }
 
 impl fmt::Display for ParseError {
@@ -75,11 +74,9 @@ impl fmt::Display for ParseError {
             ParseError::ExpectedRightBraceAfterBlock(line) => {
                 write!(f, "[PARSER]: Expect '}}' after block. At line {}", line)
             }
-            ParseError::ExpectedLeftParenAfterIf(line) => {
-                write!(f, "[PARSER]: Expect '(' after if statement at line {}", line)
-            }
-            ParseError::ExpectedRightParenAfterIf(line) => {
-                write!(f, "[PARSER]: Expect ')' after if condition at line {}", line)
+         
+            ParseError::ExpectedSomeTokenTypeAfterSomething(tt, line,  something) => {
+                write!(f, "[PARSER]: Expect '{}' after {} statement at line {}", tt,  something, line)
             }
         }
     }
@@ -138,12 +135,10 @@ impl ParseError {
             ParseError::ExpectedRightBraceAfterBlock(line) => {
                 format!("[PARSER]: Expect '}}' after block. At line {}", line)
             }
-            ParseError::ExpectedLeftParenAfterIf(line) => {
-                format!("[PARSER]: Expect '(' after if statement at line {}", line)
+            ParseError::ExpectedSomeTokenTypeAfterSomething(tt, line, something) => {
+                format!("[PARSER]: Expect '{}' after {} statement at line {}", tt,  something, line)
             }
-            ParseError::ExpectedRightParenAfterIf(line) => {
-                format!("[PARSER]: Expect ')' after if condition at line {}", line)
-            }
+         
         }
     }
 }
