@@ -9,6 +9,11 @@ pub enum Expr {
         operator: Token,
         right: Box<Expr>,
     },
+    Logical {
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
+    },
     Grouping {
         expression: Box<Expr>,
     },
@@ -59,6 +64,7 @@ pub trait Visitor<R> {
     ) -> Result<R, RuntimeError>;
     fn visit_variable(&mut self, name: &Token) -> Result<R, RuntimeError>;
     fn visit_assing(&mut self, name: &Token, value: &Expr) -> Result<R, RuntimeError>;
+    fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
 }
 
 impl Expr {
@@ -81,6 +87,9 @@ impl Expr {
             Expr::Variable { name } => {visitor.visit_variable(name)}
             Expr::Assing { name, value } => {
                 visitor.visit_assing(name, value)
+            }
+            Expr::Logical { left, operator, right } => {
+                visitor.visit_logical(left, operator, right)
             }
         }
     }
@@ -132,6 +141,9 @@ impl fmt::Display for Expr {
             }
             Expr::Assing { name, value } => {
                 write!(f, "({} = {})", name, value)
+            }
+            Expr::Logical { left, operator, right } => {
+                write!(f, "({} {} {})", left, operator, right)
             }
         }
     }

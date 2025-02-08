@@ -19,7 +19,7 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
                     "Operand must be a number.".to_string(),
                 )),
             },
-            TokenType::BANG => Ok(LiteralValue::Boolean(!self.is_truthy(lit))),
+            TokenType::BANG => Ok(LiteralValue::Boolean(!self.is_truthy(&lit))),
             _ => Err(RuntimeError::BadOperator(
                 operator.clone(),
                 "Invalid unary operator.".to_string(),
@@ -109,7 +109,7 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
     ) -> Result<LiteralValue, RuntimeError> {
         let condition_value = self.evaluate(condition)?;
     
-        if self.is_truthy(condition_value) {
+        if self.is_truthy(&condition_value) {
             self.evaluate(then_branch) 
         } else {
             self.evaluate(else_branch)
@@ -124,6 +124,17 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         let value = self.mut_evaluate(expr)?;
         self.environment.assing(name, value.clone())?;
         Ok(value)
+    }
+
+    fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<LiteralValue, RuntimeError> {
+        let left_value = self.evaluate(left)?;
+        if operator.t_type == TokenType::OR {
+            if self.is_truthy(&left_value) {return Ok(left_value)}
+        } else {
+            if !self.is_truthy(&left_value) {return Ok(left_value)}
+
+        }
+        Ok(self.evaluate(right)?)
     }
 }
 impl StatementVisitor<()> for Interpreter {
@@ -160,6 +171,34 @@ impl StatementVisitor<()> for Interpreter {
             Err(RuntimeError::BadStatement("Expected variable declaration".to_string()))
         }
     }
+    fn visit_block(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
+        match stmt {
+            Stmt::Block { statements } => {
+                self.execute_block(statements, Environment::new(Some(self.environment.clone())))
+            }
+            _ => {
+                Err(RuntimeError::BadStatement("Expected block".to_string()))
+            }
+        }
+    }
+    fn visit_if(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
+        match stmt {
+            Stmt::If { condition, then_branch, else_branch } => {
+                let value = self.evaluate(condition)?;
+                if self.is_truthy(&value) {
+                    self.execute(&then_branch)
+                } else if let Some(t_else_branch) = else_branch {
+                    self.execute(t_else_branch)
+                } else {
+                    Err(RuntimeError::BadStatement("Expected if".to_string()))
+                }
+            }
+            _ => {
+                Err(RuntimeError::BadStatement("Expected if".to_string()))
+
+            }
+        }
+    }
     
 }
 
@@ -167,10 +206,19 @@ impl Interpreter {
 
     pub fn new() -> Self {
         Self {
-            environment: Environment::new()
+            environment: Environment::new(None)
         }
     }
 
+    fn execute_block(&mut self, statements: &[Stmt], env: Environment) -> Result<(), RuntimeError> {
+        let prev_env = std::mem::replace(&mut self.environment, env);
+    
+        let result = statements.iter().try_for_each(|stmt| self.execute(stmt));
+    
+        self.environment = prev_env;
+        result
+    }
+    
     fn evaluate(&mut self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         expr.accept(self)
     }
@@ -182,12 +230,12 @@ impl Interpreter {
 
     pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<(), RuntimeError> {
         for statement in statements {
-            self.execute(statement)?;
+            self.execute(&statement)?;
         }
         Ok(())
     }
 
-    fn execute(&mut self, stmt: Stmt) -> Result<(), RuntimeError> {
+    fn execute(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
         stmt.accept(self)?;
         Ok(())
     }
@@ -212,9 +260,9 @@ impl Interpreter {
         }
     }
 
-    pub fn is_truthy(&self, value: LiteralValue) -> bool {
+    pub fn is_truthy(&self, value: &LiteralValue) -> bool {
         match value {
-            LiteralValue::Boolean(b) => b,
+            LiteralValue::Boolean(b) => *b,
             LiteralValue::Nil => false,
             _ => true,
         }

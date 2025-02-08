@@ -43,7 +43,7 @@ impl Parser {
         self.statement()
     }
     fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
-        let name = self.consume(IDENTIFIER, ParseError::ExpectedVariableName(0))?;
+        let name = self.consume(IDENTIFIER, ParseError::ExpectedVariableName(self.peek().line))?;
 
         let mut initializer = Expr::Literal {
             value: LiteralValue::Nil,
@@ -53,7 +53,7 @@ impl Parser {
             initializer = self.expression()?;
         }
 
-        self.consume(SEMICOLON, ParseError::ExpectedVariableDeclaration(0))?;
+        self.consume(SEMICOLON, ParseError::ExpectedVariableDeclaration(self.peek().line))?;
 
         Ok(Stmt::Var {
             name,
@@ -62,15 +62,49 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Stmt, ParseError> {
+        if self.match_tokens(&[IF]) {
+            return self.if_statement();
+        }
         if self.match_tokens(&[PRINT]) {
             return self.print_statement();
         }
+
+        if self.match_tokens(&[LEFT_BRACE]) {
+            return Ok(Stmt::Block { statements: self.block()? });
+        }
+
         return self.expression_statement();
+    }
+
+    fn if_statement(&mut self) -> Result<Stmt, ParseError> {
+        self.consume(LEFT_PAREN, ParseError::ExpectedLeftParenAfterIf(self.peek().line))?;
+        let condition = self.expression()?;
+        
+        self.consume(RIGHT_PAREN, ParseError::ExpectedRightParenAfterIf(self.peek().line))?;
+        
+        let then_branch = self.statement()?;
+        let mut else_branch= None;
+        
+        if self.match_tokens(&[ELSE]) {
+            else_branch = Some(Box::new(self.statement()?));
+        }
+
+        return Ok(Stmt::If { condition: Box::new(condition), then_branch: Box::new(then_branch), else_branch })
+
+    }
+
+    fn block(&mut self) -> Result<Vec<Stmt>, ParseError> {
+        let mut statements = Vec::new();
+        while !self.check(RIGHT_BRACE) && !self.is_at_end() {
+            statements.push(self.declaration()?);
+        } 
+        self.consume(RIGHT_BRACE, ParseError::ExpectedRightBraceAfterBlock(self.peek().line))?;
+        return Ok(statements);
     }
 
     fn print_statement(&mut self) -> Result<Stmt, ParseError> {
         let value: Expr = self.expression()?;
-        self.consume(SEMICOLON, ParseError::EspectSemicolonAfterValue(0))?;
+        self.consume(SEMICOLON, ParseError::EspectSemicolonAfterValue(self.peek().line))?;
         Ok(Stmt::Print {
             expression: Box::new(value),
         })
@@ -81,7 +115,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> Result<Expr, ParseError> {
-        let expr = self.ternary()?;
+        let expr = self.or()?;
         if self.match_tokens(&[EQUAL]) {
             let _equals = self.previous();
             let value = self.assignment()?;
@@ -90,15 +124,36 @@ impl Parser {
                 Expr::Variable { name } => {
                     return Ok(Expr::Assing { name, value: Box::new(value) })
                 }
-                _ => Color::ecprintln(&ParseError::InvalidAssignmentTarget(0).to_string(), Color::Red),
+                _ => Color::ecprintln(&ParseError::InvalidAssignmentTarget(self.current).to_string(), Color::Red),
             }
         }
         Ok(expr)
     }
 
+    fn or(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.and()?;
+        while self.match_tokens(&[OR]) {
+            let operator = self.previous();
+            let right = self.and()?;
+            expr = Expr::Logical { left: Box::new(expr), operator, right: Box::new(right) }
+        }
+        Ok(expr)
+    }
+
+    fn and(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.ternary()?;
+        while self.match_tokens(&[AND]) {
+            let operator = self.previous();
+            let right = self.ternary()?;
+            expr = Expr::Logical { left: Box::new(expr), operator, right: Box::new(right) }
+        }
+        Ok(expr)
+    }
+    
+
     fn expression_statement(&mut self) -> Result<Stmt, ParseError> {
         let expr: Expr = self.expression()?;
-        self.consume(SEMICOLON, ParseError::EspectSemicolonAfterExpression(0))?;
+        self.consume(SEMICOLON, ParseError::EspectSemicolonAfterExpression(self.peek().line))?;
         return Ok(Stmt::Expression {
             expression: Box::new(expr),
         });
@@ -111,7 +166,7 @@ impl Parser {
             let condition = expr.clone();
             let then_branch = self.comma()?;
 
-            self.consume(COLON, ParseError::ExpectedTernaryBranch(0, 0))?;
+            self.consume(COLON, ParseError::ExpectedTernaryBranch(self.peek().line, 0))?;
 
             let else_branch = self.expression()?;
 

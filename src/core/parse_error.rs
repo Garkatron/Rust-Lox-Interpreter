@@ -18,7 +18,10 @@ pub enum ParseError {
     EspectSemicolonAfterExpression(usize),
     ExpectedVariableName(usize),
     ExpectedVariableDeclaration(usize),
-    InvalidAssignmentTarget(usize)
+    InvalidAssignmentTarget(usize),
+    ExpectedRightBraceAfterBlock(usize),
+    ExpectedLeftParenAfterIf(usize),
+    ExpectedRightParenAfterIf(usize),
 }
 
 impl fmt::Display for ParseError {
@@ -40,7 +43,7 @@ impl fmt::Display for ParseError {
                 write!(f, "[PARSER]: Division by zero detected at line {}", line)
             }
             ParseError::UndefinedVariable(var_name, line) => {
-                write!(f, "[PARSER]:Undefined variable '{}' at line {}", var_name, line)
+                write!(f, "[PARSER]: Undefined variable '{}' at line {}", var_name, line)
             }
             ParseError::UnexpectedEOF(line) => {
                 write!(f, "[PARSER]: Unexpected end of file at line {}", line)
@@ -69,6 +72,15 @@ impl fmt::Display for ParseError {
             ParseError::InvalidAssignmentTarget(line) => {
                 write!(f, "[PARSER]: Invalid assignment target. At line {}", line)
             }
+            ParseError::ExpectedRightBraceAfterBlock(line) => {
+                write!(f, "[PARSER]: Expect '}}' after block. At line {}", line)
+            }
+            ParseError::ExpectedLeftParenAfterIf(line) => {
+                write!(f, "[PARSER]: Expect '(' after if statement at line {}", line)
+            }
+            ParseError::ExpectedRightParenAfterIf(line) => {
+                write!(f, "[PARSER]: Expect ')' after if condition at line {}", line)
+            }
         }
     }
 }
@@ -76,7 +88,6 @@ impl fmt::Display for ParseError {
 impl std::error::Error for ParseError {}
 
 impl ParseError {
-    // Método general para obtener el mensaje de error como String.
     pub fn to_string(&self) -> String {
         match self {
             ParseError::UnexpectedToken(token, line) => {
@@ -124,12 +135,19 @@ impl ParseError {
             ParseError::InvalidAssignmentTarget(line) => {
                 format!("[PARSER]: Invalid assignment target. At line {}", line)
             }
+            ParseError::ExpectedRightBraceAfterBlock(line) => {
+                format!("[PARSER]: Expect '}}' after block. At line {}", line)
+            }
+            ParseError::ExpectedLeftParenAfterIf(line) => {
+                format!("[PARSER]: Expect '(' after if statement at line {}", line)
+            }
+            ParseError::ExpectedRightParenAfterIf(line) => {
+                format!("[PARSER]: Expect ')' after if condition at line {}", line)
+            }
         }
     }
 }
 
-
-// Permite convertir `String` a `ParseError::InvalidExpression` automáticamente.
 impl From<(String, usize)> for ParseError {
     fn from(message: (String, usize)) -> Self {
         ParseError::InvalidExpression(message.0, message.1)

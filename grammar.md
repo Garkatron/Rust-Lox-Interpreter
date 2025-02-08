@@ -5,7 +5,14 @@ declaration    → varDecl
                | statement ;
 
 statement      → exprStmt
-               | printStmt ;
+               | ifStmt
+               | printStmt
+               | block ;
+
+ifStmt         → "if" "(" expression ")" statement
+               ( "else" statement )? ;
+
+block          → "{" declaration* "}" ;
 
 exprStmt       → expression ";" ;
 printStmt      → "print" expression ";" ;
@@ -15,6 +22,10 @@ varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 expression     → assignment ;
 assignment     → IDENTIFIER "=" assignment
                | ternary ;
+               | logic_or ;
+
+logic_or       → logic_and ( "or" logic_and )* ;
+logic_and      → equality ( "and" equality )* ;
 
 ternary        → comma ("?" expression ":" ternary)?;
 comma          → equality ( "," equality )* ;

@@ -1,3 +1,5 @@
-
-var test = "test test test" - "test"; 
-print test;
+if (false) {
+    print "then";
+} else {
+    print "else";
+}

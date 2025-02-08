@@ -1,14 +1,17 @@
 use super::{expression::LiteralValue, runtime_error::RuntimeError, token::Token};
 use std::collections::HashMap;
 
+#[derive(Debug, Clone)]
 pub struct Environment {
     values: HashMap<String, LiteralValue>,
+    enclosing: Option<Box<Environment>>
 }
 
 impl Environment {
-    pub fn new() -> Self {
+    pub fn new(enclosing: Option<Environment>) -> Self {
         Self {
-            values: HashMap::new()
+            values: HashMap::new(),
+            enclosing: enclosing.map(Box::new),
         }
     }
 
@@ -21,18 +24,30 @@ impl Environment {
     }
 
     pub fn get(&self, name: &Token) -> Result<LiteralValue, RuntimeError> {
-        if let Some(v) = self.values.get(&name.lexeme) {
-            return Ok(v.clone());
-        } else {
-            Err(RuntimeError::UndefinedVariable(name.clone()))
+        if let Some(value) = self.values.get(&name.lexeme) {
+            return Ok(value.clone());
         }
+    
+        if let Some(enclosing) = &self.enclosing {
+            return enclosing.get(name);
+        }
+    
+        Err(RuntimeError::UndefinedVariable(name.clone()))
     }
+    
+
 
     pub fn assing(&mut self, name: &Token, value: LiteralValue) -> Result<(), RuntimeError> {
         if self.values.contains_key(&name.lexeme) {
             self.values.insert(name.lexeme.clone(), value);
             return Ok(())
         }
+
+        if let Some(enclosing) = &mut self.enclosing {
+            let _ = enclosing.assing(name, value);
+            return Ok(());
+        }
+        
         Err(RuntimeError::UndefinedVariable(name.clone()))
     }
 }

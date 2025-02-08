@@ -104,18 +104,13 @@ impl Lox {
         let mut scanner: Scanner = Scanner::new(source.clone());
         let tokens: Vec<Token> = scanner.scan_tokens();
 
-        println!("\n---------- TOKENS ESCANEADOS ----------");
-        for token in &tokens {
-            println!("{}", token);
-        }
-
+        
         let mut parser = Parser::new(tokens.clone());
         let mut interpreter = Interpreter::new();
-
+        
         match parser.parse() {
             Ok(statements) => {
-                println!("========== RESULTADO ==========");
-
+                Color::cprintln("========== RESULTADO ==========", Color::Yellow);                
                 match interpreter.interpret(statements) {
                     Ok(_) => {
                         Self::print_message("End");
@@ -129,5 +124,13 @@ impl Lox {
                 Self::print_error(&format!("on parsing {:?}", e));
             }
         }
+        
+        /* 
+        Color::cprintln("\n---------- TOKENS ESCANEADOS ----------", Color::Yellow);
+        for token in &tokens {
+            println!("{}", token);
+        }
+        */
+
     }
 }
