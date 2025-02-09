@@ -22,7 +22,9 @@ pub enum ParseError {
     ExpectedRightBraceAfterBlock(usize),
     ExpectedSomeTokenTypeAfterSomething(TokenType, usize, String),
     ExpectedBreak(usize),
-    TooManyArguments(usize),  // Modificado para incluir línea
+    TooManyArguments(usize),
+    ExpectedIdentifier(usize, String),
+    ExpectedParameterName(usize)
 }
 
 impl fmt::Display for ParseError {
@@ -83,7 +85,14 @@ impl fmt::Display for ParseError {
                 write!(f, "[PARSER]: Expect break statement at line {}", line)
             }
             ParseError::TooManyArguments(line) => {
-                write!(f, "[PARSER]: Too many arguments at line {}", line)  // Mensaje para TooManyArguments
+                write!(f, "[PARSER]: Too many arguments at line {}", line)
+            }
+            ParseError::ExpectedIdentifier(line, kind) => {
+                write!(f, "[PARSER]: Expect {} name at line {}", line, kind)  
+
+            }
+            ParseError::ExpectedParameterName(line) => {
+                write!(f, "[PARSER]: Expect parameter name at line {}", line)
             }
         }
     }
@@ -150,6 +159,12 @@ impl ParseError {
             }
             ParseError::TooManyArguments(line) => {
                 format!("[PARSER]: Too many arguments at line {}", line)  // Mensaje para TooManyArguments
+            }
+            ParseError::ExpectedIdentifier(line, kind) => {
+                format!("[PARSER]: Expect {} name at line {}", line, kind)  
+            }
+            ParseError::ExpectedParameterName(line) => {
+                format!("[PARSER]: Expect parameter name at line {}", line)
             }
         }
     }

@@ -1,3 +1,4 @@
+pub mod native_functions;
 pub mod expression;
 pub mod parser;
 pub mod scanner;
@@ -11,3 +12,4 @@ pub mod stmt;
 pub mod environment;
 pub mod lox;
 pub mod lox_callable;
+pub mod lox_function;

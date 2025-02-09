@@ -63,8 +63,10 @@ impl LiteralValue {
         match self {
             LiteralValue::Callable(fun) => Some(fun.clone()),
             _ => None, 
+        }
     }
 }
+
 
 pub trait Visitor<R> {
     fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;

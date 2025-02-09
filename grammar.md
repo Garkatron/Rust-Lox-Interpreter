@@ -1,7 +1,8 @@
 ```
 program        → declaration* EOF ;
 
-declaration    → varDecl
+declaration    → funDecl
+               | varDecl
                | statement ;
 
 statement      → exprStmt
@@ -13,10 +14,14 @@ statement      → exprStmt
                | breakStmt 
                | block ;
 
+funDecl        → "fun" function ;
+function       → IDENTIFIER "(" parameters? ")" block ;
+
 forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
                  expression? ";"
                  expression? ")" statement ; 
 
+parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
 
 whileStmt      → "while" "(" expression ")" statement ;
                ( "else" statement)? ;

@@ -36,6 +36,9 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> Result<Stmt, ParseError> {
+        if self.match_tokens(&[FUN]) {
+            return self.function("function");
+        }
         if self.match_tokens(&[VAR]) {
             return self.var_declaration();
         };
@@ -67,6 +70,65 @@ impl Parser {
         })
     }
 
+    fn function(&mut self, kind: &str) -> Result<Stmt, ParseError> {
+        let name = self.consume(
+            IDENTIFIER,
+            ParseError::ExpectedIdentifier(self.peek().line, kind.to_string()),
+        )?;
+
+        self.consume(
+            LEFT_PAREN,
+            ParseError::ExpectedSomeTokenTypeAfterSomething(
+                LEFT_PAREN,
+                self.peek().line,
+                "function".to_string(),
+            ),
+        )?;
+
+        let mut params = vec![];
+
+        if !self.check(RIGHT_PAREN) {
+            loop {
+                if params.len() >= 255 {
+                    let _ = self.report_error(ParseError::TooManyArguments(self.peek().line));
+                }
+
+                params.push(self.consume(
+                    IDENTIFIER,
+                    ParseError::ExpectedParameterName(self.peek().line),
+                )?);
+
+                if !self.match_tokens(&[COMMA]) {
+                    break;
+                } // Continue if has commas
+            }
+        }
+        self.consume(
+            RIGHT_PAREN,
+            ParseError::ExpectedSomeTokenTypeAfterSomething(
+                RIGHT_PAREN,
+                self.peek().line,
+                "function".to_string(),
+            ),
+        )?;
+
+        self.consume(
+            LEFT_BRACE,
+            ParseError::ExpectedSomeTokenTypeAfterSomething(
+                LEFT_BRACE,
+                self.peek().line,
+                "function".to_string(),
+            ),
+        )?;
+
+        let body = self.block()?;
+        return Ok(Stmt::Function {
+            token: name,
+            params,
+            body,
+        });
+    }
+
     fn statement(&mut self) -> Result<Stmt, ParseError> {
         if self.match_tokens(&[FOR]) {
             return self.for_statement();
@@ -95,7 +157,7 @@ impl Parser {
 
         return self.expression_statement();
     }
-    
+
     fn for_statement(&mut self) -> Result<Stmt, ParseError> {
         // (
         self.consume(
@@ -106,11 +168,13 @@ impl Parser {
                 "For".to_string(),
             ),
         )?;
-        let initializer ;
+        let initializer;
         if self.match_tokens(&[SEMICOLON]) {
             // ; No initializer
             initializer = Some(Stmt::Expression {
-                expression: Expr::Literal { value: LiteralValue::Nil }, 
+                expression: Expr::Literal {
+                    value: LiteralValue::Nil,
+                },
             });
         } else if self.match_tokens(&[VAR]) {
             // var a = ?
@@ -119,7 +183,7 @@ impl Parser {
             // expr
             initializer = Some(self.expression_statement()?);
         }
-    
+
         let mut condition = None;
         if !self.check(SEMICOLON) {
             // expr
@@ -134,15 +198,17 @@ impl Parser {
                 "For".to_string(),
             ),
         )?;
-    
-        let increment ;
+
+        let increment;
         if !self.check(RIGHT_PAREN) {
             increment = Some(self.expression()?);
         } else {
             // Incremento vacío
-            increment = Some(Expr::Literal { value: LiteralValue::Nil });
+            increment = Some(Expr::Literal {
+                value: LiteralValue::Nil,
+            });
         }
-    
+
         self.consume(
             RIGHT_PAREN,
             ParseError::ExpectedSomeTokenTypeAfterSomething(
@@ -151,20 +217,15 @@ impl Parser {
                 "For".to_string(),
             ),
         )?;
-    
+
         let mut body = self.statement()?;
-    
+
         if let Some(inc) = increment {
             body = Stmt::Block {
-                statements: vec![
-                    body,
-                    Stmt::Expression {
-                        expression: inc,
-                    },
-                ],
+                statements: vec![body, Stmt::Expression { expression: inc }],
             };
         }
-    
+
         body = Stmt::While {
             condition: condition.unwrap_or(Expr::Literal {
                 value: LiteralValue::Boolean(true),
@@ -172,16 +233,15 @@ impl Parser {
             body: Box::new(body),
             else_branch: None,
         };
-    
+
         if let Some(ini) = initializer {
             body = Stmt::Block {
                 statements: vec![ini, body],
             };
         }
-    
+
         Ok(body)
     }
-    
 
     fn while_statement(&mut self) -> Result<Stmt, ParseError> {
         self.consume(
@@ -206,7 +266,6 @@ impl Parser {
 
         let body = self.statement()?;
 
-    
         let mut else_branch = None;
 
         if self.match_tokens(&[ELSE]) {
@@ -257,7 +316,7 @@ impl Parser {
 
     fn loop_statement(&mut self) -> Result<Stmt, ParseError> {
         let body = self.statement()?;
-      
+
         Ok(Stmt::Loop {
             body: Box::new(body),
         })
@@ -272,7 +331,7 @@ impl Parser {
                 "break".to_string(),
             ),
         )?;
-        Ok(Stmt::Break {  })
+        Ok(Stmt::Break {})
     }
 
     fn block(&mut self) -> Result<Vec<Stmt>, ParseError> {
@@ -364,11 +423,11 @@ impl Parser {
     }
 
     fn ternary(&mut self) -> Result<Expr, ParseError> {
-        let mut expr: Expr = self.comma()?;
+        let mut expr: Expr = self.equality()?;
 
         while self.match_tokens(&[QUESTION_MARK]) {
             let condition = expr.clone();
-            let then_branch = self.comma()?;
+            let then_branch = self.equality()?;
 
             self.consume(
                 COLON,
@@ -403,7 +462,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn comma(&mut self) -> Result<Expr, ParseError> {
+    /*fn comma(&mut self) -> Result<Expr, ParseError> {
         let mut expr = self.equality()?;
         while self.match_tokens(&[COMMA]) {
             let right = self.equality()?;
@@ -414,7 +473,7 @@ impl Parser {
         }
 
         Ok(expr)
-    }
+    }*/
 
     fn comparision(&mut self) -> Result<Expr, ParseError> {
         let mut expr = self.term()?;
@@ -491,25 +550,34 @@ impl Parser {
 
     fn finish_call(&mut self, callee: Expr) -> Result<Expr, ParseError> {
         let mut arguments = vec![];
-        if self.check(RIGHT_PAREN) {
+        if !self.check(RIGHT_PAREN) {
             loop {
                 if arguments.len() >= 255 {
-                    Color::ecprintln(&ParseError::TooManyArguments(self.peek().line).to_string(), Color::Red);
+                    Color::ecprintln(
+                        &ParseError::TooManyArguments(self.peek().line).to_string(),
+                        Color::Red,
+                    );
                 }
                 arguments.push(self.expression()?);
                 if !self.match_tokens(&[COMMA]) {
                     break;
                 }
             }
-        }
-        let paren = self.consume(RIGHT_PAREN, ParseError::ExpectedSomeTokenTypeAfterSomething(
+        }        
+        let paren = self.consume(
             RIGHT_PAREN,
-            self.peek().line,
-            "call function".to_string(),
-        ))?;
+            ParseError::ExpectedSomeTokenTypeAfterSomething(
+                RIGHT_PAREN,
+                self.peek().line,
+                "call function".to_string(),
+            ),
+        )?;
 
-        return Ok(Expr::Call { callee: Box::new(callee), paren, arguments })
-
+        return Ok(Expr::Call {
+            callee: Box::new(callee),
+            paren,
+            arguments,
+        });
     }
 
     fn primary(&mut self) -> Result<Expr, ParseError> {

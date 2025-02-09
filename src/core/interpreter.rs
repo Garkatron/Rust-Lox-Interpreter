@@ -2,12 +2,15 @@ use std::cell::RefCell;
 
 use super::environment::Environment;
 use super::expression::Expr;
+use super::lox_function::LoxFunction;
+use super::native_functions::lox_clock::LoxClock;
 use super::stmt::Stmt;
 use super::token::Token;
 use super::{expression::LiteralValue, runtime_error::RuntimeError, token_type::TokenType};
 use super::{expression::Visitor as ExpressionVisitor, stmt::Visitor as StatementVisitor};
 use std::rc::Rc;
 pub struct Interpreter {
+    pub globals: Rc<RefCell<Environment>>,
     environment: Rc<RefCell<Environment>>,
 }
 
@@ -156,21 +159,18 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         let callee_val = self.evaluate(callee)?;
         let mut args = vec![];
         for arg in arguments {
-            args.push(self.evaluate(arg));
+            args.push(self.evaluate(arg)?);
         }
 
         if let Some(fun) = callee_val.return_fn_if_callable() {
             if arguments.len() != fun.arity() {
-                Err(RuntimeError::ToMantyArguments(paren, fun.arity(), arguments.len()))
+                return Err(RuntimeError::ToMantyArguments(paren.clone(), fun.arity(), arguments.len()))
             } else {
-                return Ok(fun.call(self, arguments))
+                return Ok(fun.call(self, args)?)
             }
         } else {
             return Err(RuntimeError::BadCallable())
-        }
-
-        return Err(RuntimeError::BadCallable())
-        
+        }        
     }
 }
 impl StatementVisitor<()> for Interpreter {
@@ -281,18 +281,35 @@ impl StatementVisitor<()> for Interpreter {
         Err(RuntimeError::Break())
     }
 
+    fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt]) -> Result<(), RuntimeError> {
+        let function = LoxFunction::new(Stmt::Function {
+            token: token.clone(),  
+            params: params.to_vec(), 
+            body: body.to_vec(),     
+        });
+    
+        self.environment.borrow_mut().define(
+            &token.lexeme,
+            LiteralValue::Callable(Rc::new(function)),
+        )?;        Ok(())
+    }
     
 
 }
 
 impl Interpreter {
     pub fn new() -> Self {
-        Self {
-            environment: Environment::new(None),
-        }
+        let g = Environment::new(None);
+
+        let _ = g.borrow_mut().define("clock", LiteralValue::Callable(Rc::new(LoxClock::new())));
+
+        let x = Self {
+            globals: g.clone(),
+            environment: g.clone(),
+        }; x
     }
 
-    fn execute_block(
+    pub fn execute_block(
         &mut self,
         statements: &[Stmt],
         env: Rc<RefCell<Environment>>,
@@ -338,6 +355,7 @@ impl Interpreter {
             LiteralValue::Number(n) => n.to_string(),
             LiteralValue::String(s) => s.clone(),
             LiteralValue::Boolean(b) => b.to_string(),
+            LiteralValue::Callable(_) => "Function".to_string()
         }
     }
 
