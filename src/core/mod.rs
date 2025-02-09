@@ -10,3 +10,4 @@ pub mod runtime_error;
 pub mod stmt;
 pub mod environment;
 pub mod lox;
+pub mod lox_callable;

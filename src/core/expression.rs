@@ -1,6 +1,6 @@
-use std::fmt;
+use std::{fmt, rc::Rc};
 
-use super::{runtime_error::RuntimeError, token::Token};
+use super::{lox_callable::LoxCallable, runtime_error::RuntimeError, token::Token};
 
 #[derive(Clone, Debug)]
 pub enum Expr {
@@ -13,6 +13,11 @@ pub enum Expr {
         left: Box<Expr>,
         operator: Token,
         right: Box<Expr>,
+    },
+    Call {
+        callee: Box<Expr>,
+        paren: Token,
+        arguments: Vec<Expr>
     },
     Grouping {
         expression: Box<Expr>,
@@ -42,16 +47,28 @@ pub enum Expr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum LiteralValue {
     Number(f64),
     String(String),
     Boolean(bool),
+    Callable(Rc<dyn LoxCallable>),
     Nil,
+}
+impl LiteralValue {
+    pub fn is_callable(&self) -> bool {
+        matches!(self, LiteralValue::Callable(_))
+    }
+    pub fn return_fn_if_callable(&self) -> Option<Rc<dyn LoxCallable>> {
+        match self {
+            LiteralValue::Callable(fun) => Some(fun.clone()),
+            _ => None, 
+    }
 }
 
 pub trait Visitor<R> {
     fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
+    fn visit_call(&mut self, callee: &Expr, paren: &Token, arguments: &[Expr]) -> Result<R, RuntimeError>;
     fn visit_grouping(&mut self, expression: &Expr) -> Result<R, RuntimeError>;
     fn visit_literal(&mut self, value: &LiteralValue) -> Result<R, RuntimeError>;
     fn visit_comma(&mut self, left: &Expr, right: &Expr) -> Result<R, RuntimeError>;
@@ -91,6 +108,9 @@ impl Expr {
             Expr::Logical { left, operator, right } => {
                 visitor.visit_logical(left, operator, right)
             }
+            Expr::Call { callee, paren, arguments } => {
+                visitor.visit_call(callee, paren, arguments)
+            }
         }
     }
  
@@ -102,6 +122,9 @@ impl fmt::Display for LiteralValue {
             LiteralValue::Number(n) => write!(f, "{}", n),
             LiteralValue::String(s) => write!(f, "\"{}\"", s),
             LiteralValue::Boolean(b) => write!(f, "{}", b),
+            LiteralValue::Callable(_d) => {
+                write!(f, "{:?}", "FUNCTION")
+            }
             LiteralValue::Nil => write!(f, "nil"),
         }
     }
@@ -145,6 +168,22 @@ impl fmt::Display for Expr {
             Expr::Logical { left, operator, right } => {
                 write!(f, "({} {} {})", left, operator, right)
             }
+            Expr::Call { callee, paren, arguments } => {
+                write!(f, "{}({} {:?})", callee, paren, arguments)
+            }
         }
     }
 }
+
+impl fmt::Debug for LiteralValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LiteralValue::Number(n) => write!(f, "Number({})", n),
+            LiteralValue::String(s) => write!(f, "String({:?})", s),
+            LiteralValue::Boolean(b) => write!(f, "Boolean({})", b),
+            LiteralValue::Callable(_) => write!(f, "Callable(<function>)"),
+            LiteralValue::Nil => write!(f, "Nil"),
+        }
+    }
+}
+

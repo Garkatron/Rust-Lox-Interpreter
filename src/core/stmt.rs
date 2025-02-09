@@ -8,7 +8,8 @@ pub enum Stmt {
     Block { statements: Vec<Stmt> },
     If { condition: Expr, then_branch: Box<Stmt>, else_branch: Option<Box<Stmt>> },
     While { condition: Expr, body: Box<Stmt>, else_branch: Option<Box<Stmt>> },
-    Loop { body: Box<Stmt> }
+    Loop { body: Box<Stmt> },
+    Break {}
 }
 
 pub trait Visitor<R> {
@@ -19,6 +20,7 @@ pub trait Visitor<R> {
     fn visit_if(&mut self, condition: &Expr, then_branch: &Stmt, else_branch: Option<&Stmt>) -> Result<R, RuntimeError>;
     fn visit_while(&mut self, condition: &Expr, body: &Stmt, else_branch: Option<&Stmt>) -> Result<R, RuntimeError>;
     fn visit_loop(&mut self, body: &Stmt) -> Result<R, RuntimeError>;
+    fn visit_break(&mut self) -> Result<R, RuntimeError>;
 }
 
 impl Stmt {
@@ -34,6 +36,9 @@ impl Stmt {
             }
             Stmt::Loop { body } => {
                 visitor.visit_loop(body)
+            }
+            Stmt::Break { .. } => {
+                visitor.visit_break()
             }
         }
     }

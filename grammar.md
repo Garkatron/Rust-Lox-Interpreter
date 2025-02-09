@@ -10,19 +10,23 @@ statement      → exprStmt
                | printStmt
                | whileStmt
                | loopStmt
+               | breakStmt 
                | block ;
 
 forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
                  expression? ";"
-                 expression? ")" statement ;
+                 expression? ")" statement ; 
+
 
 whileStmt      → "while" "(" expression ")" statement ;
-               ( "else" statement )? ;
+               ( "else" statement)? ;
 
 ifStmt         → "if" "(" expression ")" statement
                ( "else" statement )? ;
 
 loopStmt       → "loop" statement
+
+breakStmt      → "break" ";" ; 
 
 block          → "{" declaration* "}" ;
 
@@ -45,8 +49,12 @@ equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
 factor         → unary ( ( "/" | "*" ) unary )* ;
-unary          → ( "!" | "-" ) unary
+unary          → ( "!" | "-" ) unary 
+               | call
                | primary ;
+
+call           → primary ( "(" arguments? ")" )* ;
+arguments      → expression ( "," expression )* ;
 
 primary        → "true" | "false" | "nil"
                | NUMBER | STRING

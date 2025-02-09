@@ -8,11 +8,15 @@ use super::{expression::LiteralValue, runtime_error::RuntimeError, token_type::T
 use super::{expression::Visitor as ExpressionVisitor, stmt::Visitor as StatementVisitor};
 use std::rc::Rc;
 pub struct Interpreter {
-    environment: Rc<RefCell<Environment>>
+    environment: Rc<RefCell<Environment>>,
 }
 
 impl ExpressionVisitor<LiteralValue> for Interpreter {
-    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Result<LiteralValue, RuntimeError> {
+    fn visit_unary(
+        &mut self,
+        operator: &Token,
+        right: &Expr,
+    ) -> Result<LiteralValue, RuntimeError> {
         let lit = self.evaluate(right)?;
         match operator.t_type {
             TokenType::MINUS => match lit {
@@ -111,33 +115,62 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         else_branch: &Expr,
     ) -> Result<LiteralValue, RuntimeError> {
         let condition_value = self.evaluate(condition)?;
-    
+
         if self.is_truthy(&condition_value) {
-            self.evaluate(then_branch) 
+            self.evaluate(then_branch)
         } else {
             self.evaluate(else_branch)
         }
     }
-    
+
     fn visit_variable(&mut self, name: &Token) -> Result<LiteralValue, RuntimeError> {
         Ok(self.environment.borrow().get(name)?)
     }
-    
+
     fn visit_assing(&mut self, name: &Token, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         let value = self.evaluate(expr)?;
         self.environment.borrow_mut().assign(name, value.clone())?;
         Ok(value)
     }
 
-    fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<LiteralValue, RuntimeError> {
+    fn visit_logical(
+        &mut self,
+        left: &Expr,
+        operator: &Token,
+        right: &Expr,
+    ) -> Result<LiteralValue, RuntimeError> {
         let left_value = self.evaluate(left)?;
         if operator.t_type == TokenType::OR {
-            if self.is_truthy(&left_value) {return Ok(left_value)}
+            if self.is_truthy(&left_value) {
+                return Ok(left_value);
+            }
         } else {
-            if !self.is_truthy(&left_value) {return Ok(left_value)}
-
+            if !self.is_truthy(&left_value) {
+                return Ok(left_value);
+            }
         }
         Ok(self.evaluate(right)?)
+    }
+
+    fn visit_call(&mut self, callee: &Expr, paren: &Token, arguments: &[Expr]) -> Result<LiteralValue, RuntimeError> {
+        let callee_val = self.evaluate(callee)?;
+        let mut args = vec![];
+        for arg in arguments {
+            args.push(self.evaluate(arg));
+        }
+
+        if let Some(fun) = callee_val.return_fn_if_callable() {
+            if arguments.len() != fun.arity() {
+                Err(RuntimeError::ToMantyArguments(paren, fun.arity(), arguments.len()))
+            } else {
+                return Ok(fun.call(self, arguments))
+            }
+        } else {
+            return Err(RuntimeError::BadCallable())
+        }
+
+        return Err(RuntimeError::BadCallable())
+        
     }
 }
 impl StatementVisitor<()> for Interpreter {
@@ -160,7 +193,10 @@ impl StatementVisitor<()> for Interpreter {
     }
 
     fn visit_block(&mut self, statements: &[Stmt]) -> Result<(), RuntimeError> {
-        self.execute_block(statements, Environment::new(Some(Rc::clone(&self.environment))))
+        self.execute_block(
+            statements,
+            Environment::new(Some(Rc::clone(&self.environment))),
+        )
     }
 
     fn visit_if(
@@ -179,50 +215,96 @@ impl StatementVisitor<()> for Interpreter {
         }
     }
 
-    fn visit_while(&mut self, condition: &Expr, body: &Stmt, else_branch: Option<&Stmt>) -> Result<(), RuntimeError> {
+    fn visit_while(
+        &mut self,
+        condition: &Expr,
+        body: &Stmt,
+        else_branch: Option<&Stmt>,
+    ) -> Result<(), RuntimeError> {
         let value = self.evaluate(condition)?;
         while self.is_truthy(&value) {
-            
-            self.execute(&body)?;
-            
+            match self.execute(&body) {
+                Ok(_) => {}
+                Err(err) => {
+                    match err {
+                        RuntimeError::Break() => {
+                            break;
+                        }
+                        _ => {
+                            return Err(err);
+                        }
+                    }
+                }
+            }
         }
         if let Some(t_else_branch) = else_branch {
             while !self.is_truthy(&value) {
-                self.execute(t_else_branch)?;
+                match self.execute(&t_else_branch) {
+                    Ok(_) => {}
+                    Err(err) => {
+                        match err {
+                            RuntimeError::Break() => {
+                                break;
+                            }
+                            _ => {
+                                return Err(err);
+                            }
+                        }
+                    }
+                }
             }
         }
- 
-       
+    
         Ok(())
     }
+    
     fn visit_loop(&mut self, body: &Stmt) -> Result<(), RuntimeError> {
         loop {
-            self.execute(body)?;
+            match self.execute(body) {
+                Ok(_) => {}
+                Err(err) => {
+                    match err {
+                        RuntimeError::Break() => {
+                            break;
+                        }
+                        _ => {
+                            return Err(err);
+                        }
+                    }
+                }
+            }
         }
+        Ok(())
     }
+
+    fn visit_break(&mut self) -> Result<(), RuntimeError> {
+        Err(RuntimeError::Break())
+    }
+
+    
+
 }
 
-    
-
-
 impl Interpreter {
-
     pub fn new() -> Self {
         Self {
-            environment: Environment::new(None)
+            environment: Environment::new(None),
         }
     }
 
-    fn execute_block(&mut self, statements: &[Stmt], env: Rc<RefCell<Environment>>) -> Result<(), RuntimeError> {
+    fn execute_block(
+        &mut self,
+        statements: &[Stmt],
+        env: Rc<RefCell<Environment>>,
+    ) -> Result<(), RuntimeError> {
         let prev_env = std::mem::replace(&mut self.environment, env);
-        
+
         let result = statements.iter().try_for_each(|stmt| self.execute(stmt));
-    
+
         self.environment = prev_env;
         result
     }
-    
-    
+
     fn evaluate(&mut self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         expr.accept(self)
     }

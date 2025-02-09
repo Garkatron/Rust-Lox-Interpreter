@@ -23,22 +23,23 @@ pub struct Scanner {
 impl Scanner {
     pub fn new(source: String) -> Self {
         let mut keywords = HashMap::new();
-        keywords.insert("and".to_string(), AND);
-        keywords.insert("class".to_string(), CLASS);
-        keywords.insert("else".to_string(), ELSE);
-        keywords.insert("false".to_string(), FALSE);
-        keywords.insert("for".to_string(), FOR);
-        keywords.insert("fun".to_string(), FUN);
-        keywords.insert("if".to_string(), IF);
-        keywords.insert("nil".to_string(), NIL);
-        keywords.insert("or".to_string(), OR);
-        keywords.insert("print".to_string(), PRINT);
-        keywords.insert("super".to_string(), SUPER);
-        keywords.insert("this".to_string(), THIS);
-        keywords.insert("true".to_string(), TRUE);
-        keywords.insert("var".to_string(), VAR);
-        keywords.insert("while".to_string(), WHILE);
-        keywords.insert("loop".to_string(), LOOP);
+        keywords.insert(AND.to_string(), AND);
+        keywords.insert(CLASS.to_string(), CLASS);
+        keywords.insert(ELSE.to_string(), ELSE);
+        keywords.insert(ELSE.to_string(), FALSE);
+        keywords.insert(FOR.to_string(), FOR);
+        keywords.insert(FUN.to_string(), FUN);
+        keywords.insert(IF.to_string(), IF);
+        keywords.insert(NIL.to_string(), NIL);
+        keywords.insert(OR.to_string(), OR);
+        keywords.insert(PRINT.to_string(), PRINT);
+        keywords.insert(SUPER.to_string(), SUPER);
+        keywords.insert(THIS.to_string(), THIS);
+        keywords.insert(THIS.to_string(), TRUE);
+        keywords.insert(VAR.to_string(), VAR);
+        keywords.insert(WHILE.to_string(), WHILE);
+        keywords.insert(LOOP.to_string(), LOOP);
+        keywords.insert(BREAK.to_string(), BREAK);
 
         Self {
             source,

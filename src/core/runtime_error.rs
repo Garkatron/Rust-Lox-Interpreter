@@ -8,8 +8,10 @@ pub enum RuntimeError {
     BadStatement(String),
     UndefinedVariable(Token),
     RedefinedVariable(String),
-    BadExpr()
-    
+    BadExpr(),
+    Break(),
+    BadCallable(),
+    ToMantyArguments(Token, usize, usize)
 }
 
 impl fmt::Display for RuntimeError {
@@ -29,6 +31,16 @@ impl fmt::Display for RuntimeError {
             }
             RuntimeError::BadExpr() => {
                 write!(f, "[RUNTIME]: Bad expr.")
+            }
+            RuntimeError::Break() => {
+                write!(f, "[RUNTIME]: 'Break' used outside of a loop/while/for.")
+            }
+            RuntimeError::BadCallable() => {
+                write!(f, "[RUNTIME]: Can only call functions and classes.")
+            }
+            RuntimeError::ToMantyArguments(paren, arity , args_size) => {
+                write!(f, "[RUNTIME]: {} Expected {} arguments but got {}.", paren, arity, args_size)
+        
             }
         }
     }
