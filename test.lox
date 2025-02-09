@@ -1,3 +1,7 @@
-loop {
-    print "test";
+var a = "a";
+
+while(true) {
+    a = a + "a";
 }
+
+// https://craftinginterpreters.com/control-flow.html#for-loops

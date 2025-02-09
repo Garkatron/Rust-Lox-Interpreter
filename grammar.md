@@ -5,11 +5,16 @@ declaration    → varDecl
                | statement ;
 
 statement      → exprStmt
+               | forStmt
                | ifStmt
                | printStmt
                | whileStmt
                | loopStmt
                | block ;
+
+forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
+                 expression? ";"
+                 expression? ")" statement ;
 
 whileStmt      → "while" "(" expression ")" statement ;
                ( "else" statement )? ;

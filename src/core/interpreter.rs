@@ -1,11 +1,14 @@
+use std::cell::RefCell;
+
 use super::environment::Environment;
 use super::expression::Expr;
 use super::stmt::Stmt;
 use super::token::Token;
 use super::{expression::LiteralValue, runtime_error::RuntimeError, token_type::TokenType};
 use super::{expression::Visitor as ExpressionVisitor, stmt::Visitor as StatementVisitor};
+use std::rc::Rc;
 pub struct Interpreter {
-    environment: Environment
+    environment: Rc<RefCell<Environment>>
 }
 
 impl ExpressionVisitor<LiteralValue> for Interpreter {
@@ -117,12 +120,12 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
     }
     
     fn visit_variable(&mut self, name: &Token) -> Result<LiteralValue, RuntimeError> {
-        Ok(self.environment.get(name)?)
+        Ok(self.environment.borrow().get(name)?)
     }
     
     fn visit_assing(&mut self, name: &Token, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
-        let value = self.mut_evaluate(expr)?;
-        self.environment.assing(name, value.clone())?;
+        let value = self.evaluate(expr)?;
+        self.environment.borrow_mut().assign(name, value.clone())?;
         Ok(value)
     }
 
@@ -152,12 +155,12 @@ impl StatementVisitor<()> for Interpreter {
 
     fn visit_var(&mut self, name: &Token, initializer: &Expr) -> Result<(), RuntimeError> {
         let value = self.evaluate(initializer)?;
-        self.environment.define(&name.lexeme, value)?;
+        self.environment.borrow_mut().define(&name.lexeme, value)?;
         Ok(())
     }
 
     fn visit_block(&mut self, statements: &[Stmt]) -> Result<(), RuntimeError> {
-        self.execute_block(statements, Environment::new(Some(self.environment.clone())))
+        self.execute_block(statements, Environment::new(Some(Rc::clone(&self.environment))))
     }
 
     fn visit_if(
@@ -210,21 +213,17 @@ impl Interpreter {
         }
     }
 
-    fn execute_block(&mut self, statements: &[Stmt], env: Environment) -> Result<(), RuntimeError> {
+    fn execute_block(&mut self, statements: &[Stmt], env: Rc<RefCell<Environment>>) -> Result<(), RuntimeError> {
         let prev_env = std::mem::replace(&mut self.environment, env);
-    
+        
         let result = statements.iter().try_for_each(|stmt| self.execute(stmt));
     
         self.environment = prev_env;
         result
     }
     
-    fn evaluate(&mut self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
-        expr.accept(self)
-    }
-
     
-    fn mut_evaluate(&mut self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
+    fn evaluate(&mut self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         expr.accept(self)
     }
 
