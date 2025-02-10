@@ -204,7 +204,7 @@ impl Scanner {
         }
         self.add_token_lit(
             NUMBER,
-            LiteralValue::Number(self.source[self.start..self.current].parse().unwrap()),
+            LiteralValue::Number(self.source[self.start..self.current].parse().expect("[SCANNER]: FloatError")),
         )
     }
 

@@ -4,6 +4,7 @@ use super::environment::Environment;
 use super::expression::Expr;
 use super::lox_function::LoxFunction;
 use super::native_functions::lox_clock::LoxClock;
+use super::native_functions::lox_print::{LoxPrint, LoxPrintLn};
 use super::stmt::Stmt;
 use super::token::Token;
 use super::{expression::LiteralValue, runtime_error::RuntimeError, token_type::TokenType};
@@ -221,24 +222,24 @@ impl StatementVisitor<()> for Interpreter {
         body: &Stmt,
         else_branch: Option<&Stmt>,
     ) -> Result<(), RuntimeError> {
-        let value = self.evaluate(condition)?;
-        while self.is_truthy(&value) {
-            match self.execute(&body) {
-                Ok(_) => {}
-                Err(err) => {
-                    match err {
-                        RuntimeError::Break() => {
-                            break;
-                        }
-                        _ => {
-                            return Err(err);
+        loop {
+            let value = self.evaluate(condition)?;
+            let truthy = self.is_truthy(&value);
+            if truthy {
+                match self.execute(&body) {
+                    Ok(_) => {}
+                    Err(err) => {
+                        match err {
+                            RuntimeError::Break() => {
+                                break;
+                            }
+                            _ => {
+                                return Err(err);
+                            }
                         }
                     }
                 }
-            }
-        }
-        if let Some(t_else_branch) = else_branch {
-            while !self.is_truthy(&value) {
+            } else if let Some(t_else_branch) = else_branch {
                 match self.execute(&t_else_branch) {
                     Ok(_) => {}
                     Err(err) => {
@@ -252,8 +253,12 @@ impl StatementVisitor<()> for Interpreter {
                         }
                     }
                 }
+            } else {
+                break;
             }
-        }
+        } 
+
+        
     
         Ok(())
     }
@@ -302,6 +307,8 @@ impl Interpreter {
         let g = Environment::new(None);
 
         let _ = g.borrow_mut().define("clock", LiteralValue::Callable(Rc::new(LoxClock::new())));
+        let _ = g.borrow_mut().define("print", LiteralValue::Callable(Rc::new(LoxPrint::new())));
+        let _ = g.borrow_mut().define("println", LiteralValue::Callable(Rc::new(LoxPrintLn::new())));
 
         let x = Self {
             globals: g.clone(),

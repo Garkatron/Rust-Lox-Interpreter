@@ -11,7 +11,8 @@ pub enum RuntimeError {
     BadExpr(),
     Break(),
     BadCallable(),
-    ToMantyArguments(Token, usize, usize)
+    ToMantyArguments(Token, usize, usize),
+    NativeFunctionError(String)
 }
 
 impl fmt::Display for RuntimeError {
@@ -41,6 +42,9 @@ impl fmt::Display for RuntimeError {
             RuntimeError::ToMantyArguments(paren, arity , args_size) => {
                 write!(f, "[RUNTIME]: {} Expected {} arguments but got {}.", paren, arity, args_size)
         
+            }
+            RuntimeError::NativeFunctionError(message) => {
+                write!(f, "[RUNTIME]: Native function error: {}.", message)
             }
         }
     }

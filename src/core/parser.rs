@@ -189,6 +189,7 @@ impl Parser {
             // expr
             condition = Some(self.expression()?);
         }
+
         // ;
         self.consume(
             SEMICOLON,
