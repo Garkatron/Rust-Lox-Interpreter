@@ -3,8 +3,6 @@ use std::cell::RefCell;
 
 use std::rc::Rc;
 
-use crate::utils::colors::Color;
-
 use super::environment::Environment;
 use super::error_types::runtime_error::RuntimeError;
 use super::lox_function::LoxFunction;
@@ -180,7 +178,7 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
 }
 impl StatementVisitor<()> for Interpreter {
     fn visit_expression(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
-        let value = self.evaluate(expression)?;
+        let _ = self.evaluate(expression)?;
         Ok(())
     }
 
@@ -293,8 +291,8 @@ impl StatementVisitor<()> for Interpreter {
         let function = LoxFunction::new(Stmt::Function {
             token: token.clone(),  
             params: params.to_vec(), 
-            body: body.to_vec(),     
-        });
+            body: body.to_vec()
+        }, Rc::clone(&self.environment));
     
         self.environment.borrow_mut().define(
             &token.lexeme,

@@ -1,3 +1,4 @@
+
 use crate::core::{error_types::runtime_error::RuntimeError, syntax::token::Token};
 
 use super::expression::Expr;
@@ -13,7 +14,7 @@ pub enum Stmt {
     While { condition: Expr, body: Box<Stmt>, else_branch: Option<Box<Stmt>> },
     Loop { body: Box<Stmt> },
     Break {},
-    Function { token: Token, params: Vec<Token>, body: Vec<Stmt> },
+    Function { token: Token, params: Vec<Token>, body: Vec<Stmt>},
     Return { keyword: Token, value: Expr }
 }
 

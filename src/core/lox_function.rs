@@ -1,14 +1,17 @@
+use std::{cell::RefCell, rc::Rc};
+
 use super::{
     environment::Environment, error_types::runtime_error::RuntimeError, interpreter::Interpreter, lox_callable::LoxCallable, syntax::components::{expression::LiteralValue, stmt::Stmt}
 };
 
 pub struct LoxFunction {
     declaration: Stmt,
+    closure: Rc<RefCell<Environment>>
 }
 
 impl LoxFunction {
-    pub fn new(declaration: Stmt) -> Self {
-        Self { declaration }
+    pub fn new(declaration: Stmt, closure: Rc<RefCell<Environment>>) -> Self {
+        Self { declaration, closure }
     }
 }
 
@@ -18,7 +21,7 @@ impl LoxCallable for LoxFunction {
         interpreter: &mut Interpreter,
         arguments: Vec<LiteralValue>,
     ) -> Result<LiteralValue, RuntimeError> {
-        let env = Environment::new(Some(interpreter.globals.clone()));
+        let env = Environment::new(Some(Rc::clone(&self.closure)));
         if let Stmt::Function {
             token: _,
             params,
