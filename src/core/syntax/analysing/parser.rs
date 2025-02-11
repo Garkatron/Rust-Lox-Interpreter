@@ -1,8 +1,7 @@
-use crate::utils::colors::Color;
 
-use super::expression::LiteralValue;
-use super::token_type::TokenType::{self, *};
-use super::{expression::Expr, parse_error::ParseError, stmt::Stmt, token::Token};
+use crate::{core::{error_types::parse_error::ParseError, syntax::{components::{expression::{Expr, LiteralValue}, stmt::Stmt}, token::Token, token_type::TokenType}}, utils::colors::Color};
+
+use crate::core::syntax::token_type::TokenType::*;
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -139,6 +138,9 @@ impl Parser {
         if self.match_tokens(&[PRINT]) {
             return self.print_statement();
         }
+        if self.match_tokens(&[RETURN]) {
+            return self.return_statement()
+        }
         if self.match_tokens(&[WHILE]) {
             return self.while_statement();
         }
@@ -156,6 +158,16 @@ impl Parser {
         }
 
         return self.expression_statement();
+    }
+
+    fn return_statement(&mut self) -> Result<Stmt, ParseError> {
+        let keyword = self.previous();
+        let mut value = Expr::Literal { value: LiteralValue::Nil };
+        if !self.check(SEMICOLON) {
+            value = self.expression()?;
+        }
+        self.consume(SEMICOLON, ParseError::ExpectedSomeTokenTypeAfterSomething(SEMICOLON, self.peek().line, "return".to_string()))?;
+        Ok(Stmt::Return { keyword, value })
     }
 
     fn for_statement(&mut self) -> Result<Stmt, ParseError> {
@@ -416,7 +428,7 @@ impl Parser {
         let expr: Expr = self.expression()?;
         self.consume(
             SEMICOLON,
-            ParseError::EspectSemicolonAfterExpression(self.peek().line),
+            ParseError::ExpectedSomeTokenTypeAfterSomething(SEMICOLON, self.peek().line, "expression".to_string()),
         )?;
         return Ok(Stmt::Expression {
             expression: *Box::new(expr),

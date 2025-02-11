@@ -9,10 +9,13 @@ statement      → exprStmt
                | forStmt
                | ifStmt
                | printStmt
+               | returnStmt
                | whileStmt
                | loopStmt
                | breakStmt 
                | block ;
+
+returnStmt     → "return" expression? ";" ;
 
 funDecl        → "fun" function ;
 function       → IDENTIFIER "(" parameters? ")" block ;

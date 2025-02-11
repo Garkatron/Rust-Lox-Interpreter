@@ -1,12 +1,10 @@
 use std::collections::HashMap;
 
+use crate::core::syntax::components::expression::LiteralValue;
+use crate::core::syntax::token::Token;
 use crate::utils::colors::Color;
 
-use super::{
-    expression::LiteralValue,
-    token::Token,
-    token_type::TokenType::{self, *},
-};
+use crate::core::syntax::token_type::TokenType::{self, *};
 
 pub struct Scanner {
     source: String,
@@ -40,6 +38,7 @@ impl Scanner {
         keywords.insert(WHILE.to_string(), WHILE);
         keywords.insert(LOOP.to_string(), LOOP);
         keywords.insert(BREAK.to_string(), BREAK);
+        keywords.insert(RETURN.to_string(), RETURN);
 
         Self {
             source,

@@ -1,15 +1,19 @@
 use std::cell::RefCell;
 
+
+use std::rc::Rc;
+
+use crate::utils::colors::Color;
+
 use super::environment::Environment;
-use super::expression::Expr;
+use super::error_types::runtime_error::RuntimeError;
 use super::lox_function::LoxFunction;
 use super::native_functions::lox_clock::LoxClock;
 use super::native_functions::lox_print::{LoxPrint, LoxPrintLn};
-use super::stmt::Stmt;
-use super::token::Token;
-use super::{expression::LiteralValue, runtime_error::RuntimeError, token_type::TokenType};
-use super::{expression::Visitor as ExpressionVisitor, stmt::Visitor as StatementVisitor};
-use std::rc::Rc;
+use super::syntax::components::expression::{Expr, LiteralValue, Visitor as ExpressionVisitor};
+use super::syntax::components::stmt::{Stmt, Visitor as StatementVisitor};
+use super::syntax::token::Token;
+use super::syntax::token_type::TokenType;
 pub struct Interpreter {
     pub globals: Rc<RefCell<Environment>>,
     environment: Rc<RefCell<Environment>>,
@@ -177,7 +181,6 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
 impl StatementVisitor<()> for Interpreter {
     fn visit_expression(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
         let value = self.evaluate(expression)?;
-        println!("{}", self.stringify(&value));
         Ok(())
     }
 
@@ -299,6 +302,10 @@ impl StatementVisitor<()> for Interpreter {
         )?;        Ok(())
     }
     
+    fn visit_return(&mut self, _: &Token, v: &Expr) -> Result<(), RuntimeError> {
+        let val = self.evaluate(v)?;
+        Err(RuntimeError::Return(val))
+    }
 
 }
 

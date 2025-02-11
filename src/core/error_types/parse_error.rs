@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{token::Token, token_type::TokenType};
+use crate::core::syntax::{token::Token, token_type::TokenType};
 
 #[derive(Debug, Clone)]
 pub enum ParseError {

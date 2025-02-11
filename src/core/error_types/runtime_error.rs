@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::token::Token;
+use crate::core::syntax::{components::expression::LiteralValue, token::Token};
 
 #[derive(Debug, Clone)]
 pub enum RuntimeError {
@@ -12,7 +12,8 @@ pub enum RuntimeError {
     Break(),
     BadCallable(),
     ToMantyArguments(Token, usize, usize),
-    NativeFunctionError(String)
+    NativeFunctionError(String),
+    Return(LiteralValue)
 }
 
 impl fmt::Display for RuntimeError {
@@ -45,6 +46,9 @@ impl fmt::Display for RuntimeError {
             }
             RuntimeError::NativeFunctionError(message) => {
                 write!(f, "[RUNTIME]: Native function error: {}.", message)
+            }
+            RuntimeError::Return(_) => {
+                write!(f, "[RUNTIME]: return out of a function.")
             }
         }
     }

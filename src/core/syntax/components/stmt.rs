@@ -1,4 +1,7 @@
-use super::{expression::Expr, runtime_error::RuntimeError, token::Token};
+use crate::core::{error_types::runtime_error::RuntimeError, syntax::token::Token};
+
+use super::expression::Expr;
+
 
 #[derive(Clone, Debug)]
 pub enum Stmt {
@@ -10,7 +13,8 @@ pub enum Stmt {
     While { condition: Expr, body: Box<Stmt>, else_branch: Option<Box<Stmt>> },
     Loop { body: Box<Stmt> },
     Break {},
-    Function { token: Token, params: Vec<Token>, body: Vec<Stmt> }
+    Function { token: Token, params: Vec<Token>, body: Vec<Stmt> },
+    Return { keyword: Token, value: Expr }
 }
 
 pub trait Visitor<R> {
@@ -23,6 +27,7 @@ pub trait Visitor<R> {
     fn visit_loop(&mut self, body: &Stmt) -> Result<R, RuntimeError>;
     fn visit_break(&mut self) -> Result<R, RuntimeError>;
     fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt]) -> Result<R, RuntimeError>;
+    fn visit_return(&mut self, keyword: &Token, value: &Expr) -> Result<R, RuntimeError>;
 }
 
 impl Stmt {
@@ -44,6 +49,9 @@ impl Stmt {
             }
             Stmt::Function { token, params, body } => {
                 visitor.visit_function(token, params, body)
+            }
+            Stmt::Return { keyword, value } => {
+                visitor.visit_return(keyword, value)
             }
         }
     }

@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::{expression::LiteralValue, token_type::TokenType};
+use super::{components::expression::LiteralValue, token_type::TokenType};
 
 #[derive(Debug, Clone)]
 pub struct Token {

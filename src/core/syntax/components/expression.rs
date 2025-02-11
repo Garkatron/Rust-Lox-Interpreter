@@ -1,6 +1,6 @@
 use std::{fmt, rc::Rc};
 
-use super::{lox_callable::LoxCallable, runtime_error::RuntimeError, token::Token};
+use crate::core::{error_types::runtime_error::RuntimeError, lox_callable::LoxCallable, syntax::token::Token};
 
 #[derive(Clone, Debug)]
 pub enum Expr {
@@ -55,6 +55,20 @@ pub enum LiteralValue {
     Callable(Rc<dyn LoxCallable>),
     Nil,
 }
+
+impl PartialEq for LiteralValue {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (LiteralValue::Boolean(b1), LiteralValue::Boolean(b2)) => b1 == b2,
+            (LiteralValue::Number(n1), LiteralValue::Number(n2)) => n1 == n2,
+            (LiteralValue::String(s1), LiteralValue::String(s2)) => s1 == s2,
+            (LiteralValue::Nil, LiteralValue::Nil) => true,
+            _ => false,
+        }
+    }
+}
+
+
 impl LiteralValue {
     pub fn is_callable(&self) -> bool {
         matches!(self, LiteralValue::Callable(_))

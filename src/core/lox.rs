@@ -3,10 +3,11 @@ use std::path::PathBuf;
 use std::{fs, io, process};
 
 use crate::core::interpreter::Interpreter;
-use crate::core::parser::Parser;
-use crate::core::scanner::Scanner;
-use crate::core::token::Token;
 use crate::utils::colors::Color;
+
+use super::syntax::analysing::parser::Parser;
+use super::syntax::analysing::scanner::Scanner;
+use super::syntax::token::Token;
 
 // Macros
 macro_rules! read_line {

@@ -1,4 +1,6 @@
-use super::{expression::LiteralValue, runtime_error::RuntimeError, token::Token};
+use super::error_types::runtime_error::RuntimeError;
+use super::syntax::components::expression::LiteralValue;
+use super::syntax::token::Token;
 use std::cell::RefCell;
 use std::rc::Rc;
 use rustc_hash::FxHashMap; // ! Speed
