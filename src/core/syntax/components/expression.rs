@@ -39,7 +39,7 @@ pub enum Expr {
         else_branch: Box<Expr>,
     },
     Variable {
-        name: Token
+        name: Token, value: Expr
     },
     Assing {
         name: Token,
@@ -95,7 +95,7 @@ pub trait Visitor<R> {
         then_branch: &Expr,
         else_branch: &Expr,
     ) -> Result<R, RuntimeError>;
-    fn visit_variable(&mut self, name: &Token) -> Result<R, RuntimeError>;
+    fn visit_variable(&mut self, name: &Token, value: &Expr) -> Result<R, RuntimeError>;
     fn visit_assing(&mut self, name: &Token, value: &Expr) -> Result<R, RuntimeError>;
     fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
 }
@@ -117,7 +117,7 @@ impl Expr {
                 then_branch,
                 else_branch,
             } => visitor.visit_ternary(condition, then_branch, else_branch),
-            Expr::Variable { name } => {visitor.visit_variable(name)}
+            Expr::Variable { name , value} => {visitor.visit_variable(name, value)}
             Expr::Assing { name, value } => {
                 visitor.visit_assing(name, value)
             }
@@ -175,8 +175,8 @@ impl fmt::Display for Expr {
             } => {
                 write!(f, "({}) ? {} : {}", condition, then_branch, else_branch)
             }
-            Expr::Variable { name } => {
-                write!(f, "(var {})", name.lexeme)
+            Expr::Variable { name , value} => {
+                write!(f, "(var {} = {})", name.lexeme, "")
             }
             Expr::Assing { name, value } => {
                 write!(f, "({} = {})", name, value)

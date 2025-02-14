@@ -381,7 +381,7 @@ impl Parser {
             let value = self.assignment()?;
 
             match expr {
-                Expr::Variable { name } => {
+                Expr::Variable { name, .. } => {
                     return Ok(Expr::Assing {
                         name,
                         value: Box::new(value),
@@ -614,6 +614,12 @@ impl Parser {
                 value: self.previous().literal.clone(),
             });
         }
+        if self.match_tokens(&[IDENTIFIER]) {
+            return Ok(Expr::Variable {
+                name: self.previous(),
+                value: Expr::Literal { value: LiteralValue::Nil }
+            });
+        }
         if self.match_tokens(&[LEFT_PAREN]) {
             let expr = self.expression()?;
             self.consume(
@@ -622,11 +628,6 @@ impl Parser {
             )?;
             return Ok(Expr::Grouping {
                 expression: Box::new(expr),
-            });
-        }
-        if self.match_tokens(&[IDENTIFIER]) {
-            return Ok(Expr::Variable {
-                name: self.previous(),
             });
         }
 

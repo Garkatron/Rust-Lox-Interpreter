@@ -129,7 +129,7 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         }
     }
 
-    fn visit_variable(&mut self, name: &Token) -> Result<LiteralValue, RuntimeError> {
+    fn visit_variable(&mut self, name: &Token, _: &Expr) -> Result<LiteralValue, RuntimeError> {
         Ok(self.environment.borrow().get(name)?)
     }
 
