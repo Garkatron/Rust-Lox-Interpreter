@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use super::{components::expression::LiteralValue, token_type::TokenType};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq)]
 pub struct Token {
     pub t_type: TokenType,
     pub lexeme: String,

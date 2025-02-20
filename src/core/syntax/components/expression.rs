@@ -1,50 +1,64 @@
-use std::{fmt, rc::Rc};
+use std::{fmt, rc::Rc, sync::atomic::Ordering};
 
 use crate::core::{error_types::runtime_error::RuntimeError, lox_callable::LoxCallable, syntax::token::Token};
-
-#[derive(Clone, Debug)]
+use std::sync::atomic::AtomicUsize;
+static NEXT_ID: AtomicUsize = AtomicUsize::new(1);
+use std::hash::Hasher;
+use std::hash::Hash;
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum Expr {
     Binary {
+        id: usize,
         left: Box<Expr>,
         operator: Token,
         right: Box<Expr>,
     },
     Logical {
+        id: usize,
         left: Box<Expr>,
         operator: Token,
         right: Box<Expr>,
     },
     Call {
+        id: usize,
         callee: Box<Expr>,
         paren: Token,
-        arguments: Vec<Expr>
+        arguments: Vec<Expr>,
     },
     Grouping {
+        id: usize,
         expression: Box<Expr>,
     },
     Literal {
+        id: usize,
         value: LiteralValue,
     },
     Unary {
+        id: usize,
         operator: Token,
         right: Box<Expr>,
     },
     Comma {
+        id: usize,
         left: Box<Expr>,
         right: Box<Expr>,
     },
     Ternary {
+        id: usize,
         condition: Box<Expr>,
         then_branch: Box<Expr>,
         else_branch: Box<Expr>,
     },
     Variable {
-        name: Token, value: Expr
+        id: usize,
+        name: Token,
+        value: Box<Expr>,
     },
     Assing {
+        id: usize,
         name: Token,
-        value: Box<Expr>
-    }
+        value: Box<Expr>,
+    },
 }
 
 #[derive(Clone)]
@@ -68,6 +82,7 @@ impl PartialEq for LiteralValue {
     }
 }
 
+impl Eq for LiteralValue {}
 
 impl LiteralValue {
     pub fn is_callable(&self) -> bool {
@@ -81,7 +96,22 @@ impl LiteralValue {
     }
 }
 
-
+impl Hash for LiteralValue {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            LiteralValue::Boolean(b) => b.hash(state),
+            LiteralValue::Number(n) => {
+                // Convertimos el número a bits para evitar problemas de precisión
+                n.to_bits().hash(state);
+            }
+            LiteralValue::String(s) => s.hash(state),
+            LiteralValue::Nil => state.write_u8(0), // Representamos Nil con un valor fijo
+            LiteralValue::Callable(_) => {
+                panic!("No se puede hacer hash de un Callable");
+            }
+        }
+    }
+}
 pub trait Visitor<R> {
     fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
     fn visit_call(&mut self, callee: &Expr, paren: &Token, arguments: &[Expr]) -> Result<R, RuntimeError>;
@@ -106,31 +136,35 @@ impl Expr {
             Expr::Binary {
                 left,
                 operator,
-                right,
+                right, ..
             } => visitor.visit_binary(left, operator, right),
-            Expr::Grouping { expression } => visitor.visit_grouping(expression),
-            Expr::Literal { value } => visitor.visit_literal(value),
-            Expr::Unary { operator, right } => visitor.visit_unary(operator, right),
-            Expr::Comma { left, right } => visitor.visit_comma(left, right),
+            Expr::Grouping { expression,.. } => visitor.visit_grouping(expression),
+            Expr::Literal { value, .. } => visitor.visit_literal(value),
+            Expr::Unary { operator, right,.. } => visitor.visit_unary(operator, right),
+            Expr::Comma { left, right ,..} => visitor.visit_comma(left, right),
             Expr::Ternary {
                 condition,
                 then_branch,
-                else_branch,
+                else_branch, ..
             } => visitor.visit_ternary(condition, then_branch, else_branch),
-            Expr::Variable { name , value} => {visitor.visit_variable(name, value)}
-            Expr::Assing { name, value } => {
+            Expr::Variable { name , value, ..} => {visitor.visit_variable(name, value)}
+            Expr::Assing { name, value, .. } => {
                 visitor.visit_assing(name, value)
             }
-            Expr::Logical { left, operator, right } => {
+            Expr::Logical { left, operator, right, .. } => {
                 visitor.visit_logical(left, operator, right)
             }
-            Expr::Call { callee, paren, arguments } => {
+            Expr::Call { callee, paren, arguments , ..} => {
                 visitor.visit_call(callee, paren, arguments)
             }
         }
     }
- 
-}
+
+    pub fn new_id() -> usize {
+        NEXT_ID.fetch_add(1, Ordering::Relaxed)
+    }
+}   
+
 
 impl fmt::Display for LiteralValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -152,39 +186,39 @@ impl fmt::Display for Expr {
             Expr::Binary {
                 left,
                 operator,
-                right,
+                right, ..
             } => {
                 write!(f, "({} {} {})", operator.lexeme, left, right)
             }
-            Expr::Grouping { expression } => {
+            Expr::Grouping { expression, .. } => {
                 write!(f, "(group {})", expression)
             }
-            Expr::Literal { value } => {
+            Expr::Literal { value, .. } => {
                 write!(f, "{}", value)
             }
-            Expr::Unary { operator, right } => {
+            Expr::Unary { operator, right, .. } => {
                 write!(f, "({} {})", operator.lexeme, right)
             }
-            Expr::Comma { left, right } => {
+            Expr::Comma { left, right, .. } => {
                 write!(f, "({}, {})", left, right)
             }
             Expr::Ternary {
                 condition,
                 then_branch,
-                else_branch,
+                else_branch, ..
             } => {
                 write!(f, "({}) ? {} : {}", condition, then_branch, else_branch)
             }
-            Expr::Variable { name , value} => {
+            Expr::Variable { name , value, ..} => {
                 write!(f, "(var {} = {})", name.lexeme, "")
             }
-            Expr::Assing { name, value } => {
+            Expr::Assing { name, value, .. } => {
                 write!(f, "({} = {})", name, value)
             }
-            Expr::Logical { left, operator, right } => {
+            Expr::Logical { left, operator, right, .. } => {
                 write!(f, "({} {} {})", left, operator, right)
             }
-            Expr::Call { callee, paren, arguments } => {
+            Expr::Call { callee, paren, arguments, .. } => {
                 write!(f, "{}({} {:?})", callee, paren, arguments)
             }
         }

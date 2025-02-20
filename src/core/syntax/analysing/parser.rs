@@ -162,7 +162,7 @@ impl Parser {
 
     fn return_statement(&mut self) -> Result<Stmt, ParseError> {
         let keyword = self.previous();
-        let mut value = Expr::Literal { value: LiteralValue::Nil };
+        let mut value = Expr::Literal { id: Expr::new_id(), value: LiteralValue::Nil };
         if !self.check(SEMICOLON) {
             value = self.expression()?;
         }
@@ -185,6 +185,7 @@ impl Parser {
             // ; No initializer
             initializer = Some(Stmt::Expression {
                 expression: Expr::Literal {
+                    id: Expr::new_id(),
                     value: LiteralValue::Nil,
                 },
             });
@@ -218,6 +219,7 @@ impl Parser {
         } else {
             // Incremento vacío
             increment = Some(Expr::Literal {
+                id: Expr::new_id(),
                 value: LiteralValue::Nil,
             });
         }
@@ -241,6 +243,7 @@ impl Parser {
 
         body = Stmt::While {
             condition: condition.unwrap_or(Expr::Literal {
+                id: Expr::new_id(),
                 value: LiteralValue::Boolean(true),
             }),
             body: Box::new(body),
@@ -383,6 +386,7 @@ impl Parser {
             match expr {
                 Expr::Variable { name, .. } => {
                     return Ok(Expr::Assing {
+                        id: Expr::new_id(),
                         name,
                         value: Box::new(value),
                     })
@@ -402,6 +406,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.and()?;
             expr = Expr::Logical {
+                id: Expr::new_id(),
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -416,6 +421,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.ternary()?;
             expr = Expr::Logical {
+                id: Expr::new_id(),
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -450,6 +456,7 @@ impl Parser {
             let else_branch = self.expression()?;
 
             expr = Expr::Ternary {
+                id: Expr::new_id(),
                 condition: Box::new(condition),
                 then_branch: Box::new(then_branch),
                 else_branch: Box::new(else_branch),
@@ -466,6 +473,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.comparision()?;
             expr = Expr::Binary {
+                id: Expr::new_id(),
                 left: Box::new(expr),
                 operator: operator.clone(),
                 right: Box::new(right),
@@ -495,6 +503,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.term()?;
             expr = Expr::Binary {
+                id: Expr::new_id(),
                 left: Box::new(expr),
                 operator: operator.clone(),
                 right: Box::new(right),
@@ -511,6 +520,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.factor()?;
             expr = Expr::Binary {
+                id: Expr::new_id(),
                 left: Box::new(expr),
                 operator: operator.clone(),
                 right: Box::new(right),
@@ -527,6 +537,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.unary()?;
             expr = Expr::Binary {
+                id: Expr::new_id(),
                 left: Box::new(expr),
                 operator: operator.clone(),
                 right: Box::new(right),
@@ -541,6 +552,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.unary()?;
             return Ok(Expr::Unary {
+                id: Expr::new_id(),
                 operator: operator.clone(),
                 right: Box::new(right),
             });
@@ -587,6 +599,7 @@ impl Parser {
         )?;
 
         return Ok(Expr::Call {
+            id: Expr::new_id(),
             callee: Box::new(callee),
             paren,
             arguments,
@@ -596,28 +609,33 @@ impl Parser {
     fn primary(&mut self) -> Result<Expr, ParseError> {
         if self.match_tokens(&[FALSE]) {
             return Ok(Expr::Literal {
+                id: Expr::new_id(),
                 value: LiteralValue::Boolean(false),
             });
         }
         if self.match_tokens(&[TRUE]) {
             return Ok(Expr::Literal {
+                id: Expr::new_id(),
                 value: LiteralValue::Boolean(true),
             });
         }
         if self.match_tokens(&[NIL]) {
             return Ok(Expr::Literal {
+                id: Expr::new_id(),
                 value: LiteralValue::Nil,
             });
         }
         if self.match_tokens(&[NUMBER, STRING]) {
             return Ok(Expr::Literal {
+                id: Expr::new_id(),
                 value: self.previous().literal.clone(),
             });
         }
         if self.match_tokens(&[IDENTIFIER]) {
             return Ok(Expr::Variable {
+                id: Expr::new_id(),
                 name: self.previous(),
-                value: Expr::Literal { value: LiteralValue::Nil }
+                value: Box::new(Expr::Literal { id: Expr::new_id(), value: LiteralValue::Nil }) 
             });
         }
         if self.match_tokens(&[LEFT_PAREN]) {
@@ -627,6 +645,7 @@ impl Parser {
                 ParseError::ExpectedRightParen(self.peek().line),
             )?;
             return Ok(Expr::Grouping {
+                id: Expr::new_id(),
                 expression: Box::new(expr),
             });
         }

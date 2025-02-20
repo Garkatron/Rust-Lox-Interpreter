@@ -1,8 +1,10 @@
 use super::error_types::runtime_error::RuntimeError;
 use super::syntax::components::expression::LiteralValue;
 use super::syntax::token::Token;
+use super::syntax::token_type::TokenType;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::usize;
 use rustc_hash::FxHashMap; // ! Speed
 
 
@@ -53,4 +55,33 @@ impl Environment {
 
         Err(RuntimeError::UndefinedVariable(name.clone()))
     }
+    pub fn get_at(&self, distance: usize, name: &str) -> Result<LiteralValue, RuntimeError> {
+        self.ancestor(distance)
+            .borrow()
+            .values
+            .get(name)
+            .cloned()
+            .ok_or_else(|| RuntimeError::UndefinedVariable(Token {
+                lexeme: name.to_string(),
+                line: 0,
+                literal: LiteralValue::Nil,
+                t_type: TokenType::VAR
+            }))
+    }
+
+    pub fn ancestor(&self, distance: usize) -> Rc<RefCell<Environment>> {
+        let mut env = Rc::new(RefCell::new(self.clone())); // Clonamos el primer entorno
+
+        for _ in 0..distance {
+            let enclosing = match &env.borrow().enclosing {
+                Some(enclosing) => Rc::clone(enclosing),
+                None => panic!("No hay entorno ancestro a la distancia especificada."),
+            };
+            env = enclosing; 
+        }
+        
+        env
+    }
+
+    
 }

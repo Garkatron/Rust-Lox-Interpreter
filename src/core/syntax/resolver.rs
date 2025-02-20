@@ -1,13 +1,12 @@
 use std::cell::RefCell;
 
-use std::fs::soft_link;
 use std::rc::Rc;
 
 use rustc_hash::FxHashMap;
 
 use super::components::expression::{Expr, LiteralValue, Visitor as ExpressionVisitor};
 use super::components::stmt::{Stmt, Visitor as StatementVisitor};
-use super::token::{self, Token};
+use super::token::{Token};
 use crate::core::error_types::runtime_error::RuntimeError;
 use crate::core::interpreter::Interpreter;
 use crate::utils::colors::Color;
@@ -193,7 +192,7 @@ impl Resolver {
         for i in 0..self.scopes.len()-1 {
             if let Some(scope) = self.scopes.get(i) {
                 if scope.contains_key(&name.lexeme) {
-                    self.interpreter.resolve(expr, self.scopes.len()-1);
+                    self.interpreter.borrow_mut().resolve(expr.clone(), self.scopes.len()-1);
                     return;
                 }
             }

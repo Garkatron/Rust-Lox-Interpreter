@@ -2,6 +2,9 @@ use std::cell::RefCell;
 
 
 use std::rc::Rc;
+use std::usize;
+
+use rustc_hash::FxHashMap;
 
 use super::environment::Environment;
 use super::error_types::runtime_error::RuntimeError;
@@ -15,6 +18,7 @@ use super::syntax::token_type::TokenType;
 pub struct Interpreter {
     pub globals: Rc<RefCell<Environment>>,
     environment: Rc<RefCell<Environment>>,
+    locals: FxHashMap<Expr, usize>
 }
 
 impl ExpressionVisitor<LiteralValue> for Interpreter {
@@ -129,8 +133,9 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         }
     }
 
-    fn visit_variable(&mut self, name: &Token, _: &Expr) -> Result<LiteralValue, RuntimeError> {
-        Ok(self.environment.borrow().get(name)?)
+    fn visit_variable(&mut self, name: &Token, e: &Expr) -> Result<LiteralValue, RuntimeError> {
+        Ok(self.look_up_variable(name, e))
+        // Ok(self.environment.borrow().get(name)?)
     }
 
     fn visit_assing(&mut self, name: &Token, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
@@ -318,6 +323,7 @@ impl Interpreter {
         let x = Self {
             globals: g.clone(),
             environment: g.clone(),
+            locals: FxHashMap::default()
         }; x
     }
 
@@ -376,6 +382,18 @@ impl Interpreter {
             LiteralValue::Boolean(b) => *b,
             LiteralValue::Nil => false,
             _ => true,
+        }
+    }
+
+    pub fn resolve(&mut self, expr: Expr, depth: usize) {
+        self.locals.insert(expr, depth);
+    }
+
+    pub fn look_up_variable(&mut self, name: &Token, expr: &Expr) -> LiteralValue {
+        if let Some(opt) = self.locals.get(expr) {
+            return self.environment.borrow().get_at(opt, name.lexeme);
+        } else {
+            return self.globals.borrow().get(name);
         }
     }
 }
