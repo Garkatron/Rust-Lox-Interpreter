@@ -1,6 +1,4 @@
 use std::cell::RefCell;
-
-
 use std::rc::Rc;
 use std::usize;
 
@@ -10,24 +8,20 @@ use super::environment::Environment;
 use super::error_types::runtime_error::RuntimeError;
 use super::lox_function::LoxFunction;
 use super::native_functions::lox_clock::LoxClock;
-use super::native_functions::lox_print::{LoxPrint, LoxPrintLn};
+use super::native_functions::lox_print::LoxPrint;
 use super::syntax::components::expression::{Expr, LiteralValue, Visitor as ExpressionVisitor};
 use super::syntax::components::stmt::{Stmt, Visitor as StatementVisitor};
 use super::syntax::token::Token;
 use super::syntax::token_type::TokenType;
 
-pub struct Interpreter<'a> {
-    pub globals: Environment<'a>,
-    environment: &'a mut Environment<'a>,
+pub struct Interpreter {
+    pub globals: Box<Environment>,
+    environment: Rc<RefCell<Environment>>,
     locals: FxHashMap<Expr, usize>,
 }
 
-impl ExpressionVisitor<LiteralValue> for Interpreter<'_> {
-    fn visit_unary(
-        &mut self,
-        operator: &Token,
-        right: &Expr,
-    ) -> Result<LiteralValue, RuntimeError> {
+impl ExpressionVisitor<LiteralValue> for Interpreter {
+    fn visit_unary(&mut self, operator: &Token, right: &Expr,) -> Result<LiteralValue, RuntimeError> {
         let lit = self.evaluate(right)?;
         match operator.t_type {
             TokenType::MINUS => match lit {
@@ -164,7 +158,12 @@ impl ExpressionVisitor<LiteralValue> for Interpreter<'_> {
         Ok(self.evaluate(right)?)
     }
 
-    fn visit_call(&mut self, callee: &Expr, paren: &Token, arguments: &[Expr]) -> Result<LiteralValue, RuntimeError> {
+    fn visit_call(
+        &mut self,
+        callee: &Expr,
+        paren: &Token,
+        arguments: &[Expr],
+    ) -> Result<LiteralValue, RuntimeError> {
         let callee_val = self.evaluate(callee)?;
         let mut args = vec![];
         for arg in arguments {
@@ -173,16 +172,20 @@ impl ExpressionVisitor<LiteralValue> for Interpreter<'_> {
 
         if let Some(fun) = callee_val.return_fn_if_callable() {
             if arguments.len() != fun.arity() {
-                return Err(RuntimeError::ToMantyArguments(paren.clone(), fun.arity(), arguments.len()))
+                return Err(RuntimeError::ToMantyArguments(
+                    paren.clone(),
+                    fun.arity(),
+                    arguments.len(),
+                ));
             } else {
-                return Ok(fun.call(self, args)?)
+                return Ok(fun.call(self, args)?);
             }
         } else {
-            return Err(RuntimeError::BadCallable())
-        }        
+            return Err(RuntimeError::BadCallable());
+        }
     }
 }
-impl StatementVisitor<()> for Interpreter<'_> {
+impl StatementVisitor<()> for Interpreter {
     fn visit_expression(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
         let _ = self.evaluate(expression)?;
         Ok(())
@@ -201,10 +204,7 @@ impl StatementVisitor<()> for Interpreter<'_> {
     }
 
     fn visit_block(&mut self, statements: &[Stmt]) -> Result<(), RuntimeError> {
-        self.execute_block(
-            statements,
-            self.environment,
-        )
+        self.execute_block(statements, self.environment.clone())
     }
 
     fn visit_if(
@@ -235,55 +235,47 @@ impl StatementVisitor<()> for Interpreter<'_> {
             if truthy {
                 match self.execute(&body) {
                     Ok(_) => {}
-                    Err(err) => {
-                        match err {
-                            RuntimeError::Break() => {
-                                break;
-                            }
-                            _ => {
-                                return Err(err);
-                            }
-                        }
-                    }
-                }
-            } else if let Some(t_else_branch) = else_branch {
-                match self.execute(&t_else_branch) {
-                    Ok(_) => {}
-                    Err(err) => {
-                        match err {
-                            RuntimeError::Break() => {
-                                break;
-                            }
-                            _ => {
-                                return Err(err);
-                            }
-                        }
-                    }
-                }
-            } else {
-                break;
-            }
-        } 
-
-        
-    
-        Ok(())
-    }
-    
-    fn visit_loop(&mut self, body: &Stmt) -> Result<(), RuntimeError> {
-        loop {
-            match self.execute(body) {
-                Ok(_) => {}
-                Err(err) => {
-                    match err {
+                    Err(err) => match err {
                         RuntimeError::Break() => {
                             break;
                         }
                         _ => {
                             return Err(err);
                         }
-                    }
+                    },
                 }
+            } else if let Some(t_else_branch) = else_branch {
+                match self.execute(&t_else_branch) {
+                    Ok(_) => {}
+                    Err(err) => match err {
+                        RuntimeError::Break() => {
+                            break;
+                        }
+                        _ => {
+                            return Err(err);
+                        }
+                    },
+                }
+            } else {
+                break;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn visit_loop(&mut self, body: &Stmt) -> Result<(), RuntimeError> {
+        loop {
+            match self.execute(body) {
+                Ok(_) => {}
+                Err(err) => match err {
+                    RuntimeError::Break() => {
+                        break;
+                    }
+                    _ => {
+                        return Err(err);
+                    }
+                },
             }
         }
         Ok(())
@@ -293,54 +285,61 @@ impl StatementVisitor<()> for Interpreter<'_> {
         Err(RuntimeError::Break())
     }
 
-    fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt]) -> Result<(), RuntimeError> {
-        let function = LoxFunction::new(Stmt::Function {
-            token: token.clone(),  
-            params: params.to_vec(), 
-            body: body.to_vec()
-        }, Rc::clone(&self.environment));
-    
-        self.environment.define(
-            &token.lexeme,
-            LiteralValue::Callable(Rc::new(function)),
-        )?;        Ok(())
+    fn visit_function(
+        &mut self,
+        token: &Token,
+        params: &[Token],
+        body: &[Stmt],
+    ) -> Result<(), RuntimeError> {
+        let function = LoxFunction::new(
+            Stmt::Function {
+                token: token.clone(),
+                params: params.to_vec(),
+                body: body.to_vec(),
+            },
+            self.environment,
+        );
+
+        self.environment
+            .define(&token.lexeme, LiteralValue::Callable(Rc::new(function)))?;
+        Ok(())
     }
-    
+
     fn visit_return(&mut self, _: &Token, v: &Expr) -> Result<(), RuntimeError> {
         let val = self.evaluate(v)?;
         Err(RuntimeError::Return(val))
     }
-
 }
 
-impl<'a> Interpreter<'a> {
-    pub fn new(global_env: &'a mut Environment<'a>) -> Self {
-        global_env.define("clock", LiteralValue::Callable(Box::new(LoxClock::new())));
-        global_env.define("print", LiteralValue::Callable(Box::new(LoxPrint::new())));
-        global_env.define("println", LiteralValue::Callable(Box::new(LoxPrintLn::new())));
+impl Interpreter {
+    pub fn new(global_env: Box<Environment>) -> Self {
+        // global_env.define("clock", LiteralValue::Callable(Box::new(LoxClock::new())));
+        // global_env.define("print", LiteralValue::Callable(Box::new(LoxPrint::new())));
         
+        /*
+        global_env.define(
+            "println",
+            LiteralValue::Callable(Box::new(LoxPrintLn::new())),
+        );
+        */
+
         Self {
-            globals: global_env,
+            globals: global_env.clone(),
             environment: global_env,
             locals: FxHashMap::default(),
         }
     }
 
-    pub fn execute_block(
-        &mut self,
-        statements: &[Stmt],
-        environment: &'a mut Environment<'a>,
+    pub fn execute_block(&mut self, statements: &[Stmt], environment: Box<Environment>,) -> Result<(), RuntimeError> {
+        let previous = self.environment.clone();
 
-    ) -> Result<(), RuntimeError> {
-        let previous = self.environment.clone(); // Assuming Environment implements Clone or you can implement that for Environment.
-        
         self.environment = environment;
-    
+
         for statement in statements {
             self.execute(statement);
         }
-        
-        self.environment = previous;
+
+        self.environment = Box::new(*previous);
         Ok(())
     }
 
@@ -377,7 +376,7 @@ impl<'a> Interpreter<'a> {
             LiteralValue::Number(n) => n.to_string(),
             LiteralValue::String(s) => s.clone(),
             LiteralValue::Boolean(b) => b.to_string(),
-            LiteralValue::Callable(_) => "Function".to_string()
+            LiteralValue::Callable(_) => "Function".to_string(),
         }
     }
 
@@ -395,9 +394,9 @@ impl<'a> Interpreter<'a> {
 
     pub fn look_up_variable(&mut self, name: &Token, expr: &Expr) -> LiteralValue {
         if let Some(opt) = self.locals.get(expr) {
-            return self.environment.get_at(opt, name.lexeme);
+            return self.environment.get_at(*opt, &name.lexeme).expect("LOOK_UP_VARIABLE METHOD HAS AN ERROR");
         } else {
-            return self.globals.get(name);
+            return self.globals.get(name).expect("LOOK_UP_VARIABLE METHOD HAS AN ERROR");
         }
     }
 }

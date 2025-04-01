@@ -4,24 +4,24 @@ use super::{
     environment::Environment, error_types::runtime_error::RuntimeError, interpreter::Interpreter, lox_callable::LoxCallable, syntax::components::{expression::LiteralValue, stmt::Stmt}
 };
 
-pub struct LoxFunction<'a> {
+pub struct LoxFunction {
     declaration: Stmt,
-    closure: Rc<RefCell<Environment<'a>>>,
+    closure: Rc<Environment>,
 }
 
-impl<'a> LoxFunction<'a> {
-    pub fn new(declaration: Stmt, closure: Rc<RefCell<Environment<'a>>>) -> Self {
+impl LoxFunction {
+    pub fn new(declaration: Stmt, closure: Rc<Environment>) -> Self {
         Self { declaration, closure }
     }
 }
 
-impl LoxCallable for LoxFunction<'_> {
+impl LoxCallable for LoxFunction {
     fn call(
         &self,
         interpreter: &mut Interpreter,
         arguments: Vec<LiteralValue>,
     ) -> Result<LiteralValue, RuntimeError> {
-        let mut env = Environment::new(Some(&mut self.closure.borrow_mut()));
+        let mut env = Environment::new(Some(self.closure));
         
         if let Stmt::Function {
             params,
@@ -33,7 +33,7 @@ impl LoxCallable for LoxFunction<'_> {
                 env.define(&param.lexeme, arguments[i].clone())?;
             }
 
-            match interpreter.execute_block(&body, env) {
+            match interpreter.execute_block(&body, Box::new(env)) {
                 Ok(_) => Ok(LiteralValue::Nil),
                 Err(RuntimeError::Return(v)) => Ok(v),
                 Err(e) => Err(e),

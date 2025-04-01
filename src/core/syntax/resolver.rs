@@ -12,8 +12,8 @@ use crate::core::interpreter::Interpreter;
 use crate::utils::colors::Color;
 
 pub struct Resolver {
-    interpreter: Rc<RefCell<Interpreter>>,
-    scopes: Vec<FxHashMap<String, bool>>,
+    interpreter: Rc<RefCell<Interpreter<'static>>>,
+    scopes: Vec<FxHashMap<String, bool>>
 }
 
 impl ExpressionVisitor<()> for Resolver {
@@ -96,7 +96,7 @@ impl StatementVisitor<()> for Resolver {
     fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt]) -> Result<(), RuntimeError> {
         self.declare(token);
         self.define(token);
-        self.resolve_function(Stmt::Function { token: token.clone(), params: params.to_vec(), body: body.to_vec() })
+        self.resolve_function(Stmt::Function { token: token.clone(), params: params.to_vec(), body: body.to_vec() });
         Ok(())
     }
     fn visit_expression(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
@@ -115,7 +115,7 @@ impl StatementVisitor<()> for Resolver {
         self.resolve_expr(expression);
         Ok(())
     }
-    fn visit_return(&mut self, keyword: &Token, value: &Expr) -> Result<(), RuntimeError> {
+    fn visit_return(&mut self, _keyword: &Token, value: &Expr) -> Result<(), RuntimeError> {
         self.resolve_expr(value);
         Ok(())
     }
@@ -138,7 +138,7 @@ impl StatementVisitor<()> for Resolver {
 }
 
 impl Resolver {
-    fn new(interpreter: Rc<RefCell<Interpreter>>) -> Self {
+    fn new(interpreter: Rc<RefCell<Interpreter<'static>>>) -> Self {
         Self { interpreter, scopes: vec![] }
     }
 

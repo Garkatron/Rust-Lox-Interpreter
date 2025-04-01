@@ -51,6 +51,7 @@ impl Parser {
         )?;
 
         let mut initializer = Expr::Literal {
+            id: Expr::new_id(),
             value: LiteralValue::Nil,
         }; // ! ALL VARS NOT INITIALIZED ARE NULL
 

@@ -4,22 +4,20 @@ use super::syntax::token::Token;
 use super::syntax::token_type::TokenType;
 use std::collections::HashMap;
 
-#[derive(Debug)]
-pub struct Environment<'a> {
+#[derive(Debug, Clone)]
+pub struct Environment {
     values: HashMap<String, LiteralValue>,
-    enclosing: Option<&'a mut Environment<'a>>,  // Referencia mutable al entorno padre
+    enclosing: Option<Box<Environment>>,
 }
 
-impl<'a> Environment<'a> {
-    // Crear un nuevo entorno con un posible entorno padre
-    pub fn new(enclosing: Option<&'a mut Environment<'a>>) -> Self {
+impl Environment {
+    pub fn new(enclosing: Option<Box<Environment>>) -> Self {
         Environment {
             values: HashMap::new(),
             enclosing,
         }
     }
 
-    // Definir una nueva variable en el entorno
     pub fn define(&mut self, name: &str, value: LiteralValue) -> Result<(), RuntimeError> {
         if self.values.contains_key(name) {
             return Err(RuntimeError::RedefinedVariable(name.to_owned()));
@@ -28,7 +26,6 @@ impl<'a> Environment<'a> {
         Ok(())
     }
 
-    // Obtener una variable en el entorno actual o en un ancestro
     pub fn get(&self, name: &Token) -> Result<LiteralValue, RuntimeError> {
         if let Some(value) = self.values.get(&name.lexeme) {
             return Ok(value.clone());
@@ -50,12 +47,12 @@ impl<'a> Environment<'a> {
         Err(RuntimeError::UndefinedVariable(name.clone()))
     }
 
-    pub fn ancestor(&mut self, distance: usize) -> Option<&mut Environment<'a>> {
+    pub fn ancestor(&mut self, distance: usize) -> Option<&mut Environment> {
         let mut env = self;
         for _ in 0..distance {
             match env.enclosing {
                 Some(ref mut enclosing) => env = enclosing,
-                None => return None, // Si no hay un ancestro a esa distancia, retorna None
+                None => return None,
             }
         }
         Some(env)
@@ -68,14 +65,14 @@ impl<'a> Environment<'a> {
                     lexeme: name.to_string(),
                     line: 0,
                     literal: LiteralValue::Nil,
-                    t_type: TokenType::VAR
+                    t_type: TokenType::VAR,
                 })
             }),
             None => Err(RuntimeError::UndefinedVariable(Token {
                 lexeme: name.to_string(),
                 line: 0,
                 literal: LiteralValue::Nil,
-                t_type: TokenType::VAR
+                t_type: TokenType::VAR,
             })),
         }
     }
