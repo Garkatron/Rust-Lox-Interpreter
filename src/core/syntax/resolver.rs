@@ -12,7 +12,7 @@ use crate::core::interpreter::Interpreter;
 use crate::utils::colors::Color;
 
 pub struct Resolver {
-    interpreter: Rc<RefCell<Interpreter<'static>>>,
+    interpreter: Rc<RefCell<Interpreter>>,
     scopes: Vec<FxHashMap<String, bool>>
 }
 
@@ -138,7 +138,7 @@ impl StatementVisitor<()> for Resolver {
 }
 
 impl Resolver {
-    fn new(interpreter: Rc<RefCell<Interpreter<'static>>>) -> Self {
+    fn new(interpreter: Rc<RefCell<Interpreter>>) -> Self {
         Self { interpreter, scopes: vec![] }
     }
 

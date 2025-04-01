@@ -135,7 +135,7 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
 
     fn visit_assing(&mut self, name: &Token, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         let value = self.evaluate(expr)?;
-        self.environment.assign(name, value.clone())?;
+        self.environment.borrow_mut().assign(name, value.clone())?;
         Ok(value)
     }
 
@@ -199,12 +199,12 @@ impl StatementVisitor<()> for Interpreter {
 
     fn visit_var(&mut self, name: &Token, initializer: &Expr) -> Result<(), RuntimeError> {
         let value = self.evaluate(initializer)?;
-        self.environment.define(&name.lexeme, value)?;
+        self.environment.borrow_mut().define(&name.lexeme, value)?;
         Ok(())
     }
 
     fn visit_block(&mut self, statements: &[Stmt]) -> Result<(), RuntimeError> {
-        self.execute_block(statements, self.environment.clone())
+        self.execute_block(statements, Rc::clone(&self.environment))
     }
 
     fn visit_if(
@@ -297,11 +297,11 @@ impl StatementVisitor<()> for Interpreter {
                 params: params.to_vec(),
                 body: body.to_vec(),
             },
-            self.environment,
+            Rc::clone(&self.environment),
         );
 
         self.environment
-            .define(&token.lexeme, LiteralValue::Callable(Rc::new(function)))?;
+            .borrow_mut().define(&token.lexeme, LiteralValue::Callable(Rc::new(function)))?;
         Ok(())
     }
 
@@ -312,9 +312,11 @@ impl StatementVisitor<()> for Interpreter {
 }
 
 impl Interpreter {
-    pub fn new(global_env: Box<Environment>) -> Self {
-        // global_env.define("clock", LiteralValue::Callable(Box::new(LoxClock::new())));
-        // global_env.define("print", LiteralValue::Callable(Box::new(LoxPrint::new())));
+    pub fn new(mut global_env: Box<Environment>) -> Self {
+
+        let _ = global_env.define("clock", LiteralValue::Callable(Rc::new(LoxClock::new())));
+        let _ = global_env.define("print", LiteralValue::Callable(Rc::new(LoxPrint::new())));
+
         
         /*
         global_env.define(
@@ -325,12 +327,12 @@ impl Interpreter {
 
         Self {
             globals: global_env.clone(),
-            environment: global_env,
+            environment: Rc::new(RefCell::new(*global_env)),
             locals: FxHashMap::default(),
         }
     }
 
-    pub fn execute_block(&mut self, statements: &[Stmt], environment: Box<Environment>,) -> Result<(), RuntimeError> {
+    pub fn execute_block(&mut self, statements: &[Stmt], environment: Rc<RefCell<Environment>>,) -> Result<(), RuntimeError> {
         let previous = self.environment.clone();
 
         self.environment = environment;
@@ -339,7 +341,7 @@ impl Interpreter {
             self.execute(statement);
         }
 
-        self.environment = Box::new(*previous);
+        self.environment = previous;
         Ok(())
     }
 
@@ -394,7 +396,7 @@ impl Interpreter {
 
     pub fn look_up_variable(&mut self, name: &Token, expr: &Expr) -> LiteralValue {
         if let Some(opt) = self.locals.get(expr) {
-            return self.environment.get_at(*opt, &name.lexeme).expect("LOOK_UP_VARIABLE METHOD HAS AN ERROR");
+            return self.environment.borrow_mut().get_at(*opt, &name.lexeme).expect("LOOK_UP_VARIABLE METHOD HAS AN ERROR");
         } else {
             return self.globals.get(name).expect("LOOK_UP_VARIABLE METHOD HAS AN ERROR");
         }

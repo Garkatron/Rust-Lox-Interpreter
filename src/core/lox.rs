@@ -5,6 +5,7 @@ use std::{fs, io, process};
 use crate::core::interpreter::Interpreter;
 use crate::utils::colors::Color;
 
+use super::environment::Environment;
 use super::syntax::analysing::parser::Parser;
 use super::syntax::analysing::scanner::Scanner;
 use super::syntax::token::Token;
@@ -107,7 +108,7 @@ impl Lox {
 
         
         let mut parser = Parser::new(tokens.clone());
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new(Box::new(Environment::new(None)));
         
         match parser.parse() {
             Ok(statements) => {
