@@ -138,13 +138,7 @@ impl Lox {
                 Self::print_error(&format!("on parsing {:?}", e));
             }
         }
-        
-        /* 
-        Color::cprintln("\n---------- TOKENS ESCANEADOS ----------", Color::Yellow);
-        for token in &tokens {
-            println!("{}", token);
-        }
-        */
+    
 
     }
 }
