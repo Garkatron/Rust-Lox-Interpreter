@@ -1,5 +1,7 @@
+use std::cell::RefCell;
 use std::io::Write;
 use std::path::PathBuf;
+use std::rc::Rc;
 use std::{fs, io, process};
 
 use crate::core::interpreter::Interpreter;
@@ -8,6 +10,7 @@ use crate::utils::colors::Color;
 use super::environment::Environment;
 use super::syntax::analysing::parser::Parser;
 use super::syntax::analysing::scanner::Scanner;
+use super::syntax::resolver::Resolver;
 use super::syntax::token::Token;
 
 // Macros
@@ -108,12 +111,21 @@ impl Lox {
 
         
         let mut parser = Parser::new(tokens.clone());
-        let mut interpreter = Interpreter::new(Box::new(Environment::new(None)));
+        let interpreter = Rc::new(RefCell::new(Interpreter::new(Box::new(Environment::new(None)))));
         
+        let mut resolver = Resolver::new(Rc::clone(&interpreter));
+
+
         match parser.parse() {
             Ok(statements) => {
-                Color::cprintln("========== RESULTADO ==========", Color::Yellow);                
-                match interpreter.interpret(statements) {
+                Color::cprintln("========== RESULTADO ==========", Color::Yellow);      
+
+                if let Err(e) = resolver.resolve_statements(&statements) {
+                    Self::print_error(&format!("On resolving: {}", e));
+                    return;
+                }
+
+                match interpreter.borrow_mut().interpret(statements) {
                     Ok(_) => {
                         Self::print_message("End");
                     }

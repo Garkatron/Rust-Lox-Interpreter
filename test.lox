@@ -1,6 +1,5 @@
+return "at top level";
 
-var a = 1;
-print 1+1;
 
 /*
 var start = clock();
