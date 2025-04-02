@@ -1,15 +1,8 @@
-return "at top level";
+var a = "outer";
 
-
-/*
-var start = clock();
-
-for (var i = 0; i<100000; i = i + 1) {
-    print(i);
+fun test() {
+    print(a);
 }
 
-var end = clock(); 
-var result = end-start;
-
-print("Resultado: " + result);
-*/
+print(a);
+test();

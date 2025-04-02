@@ -6,6 +6,7 @@ use rustc_hash::FxHashMap;
 
 use super::environment::Environment;
 use super::error_types::runtime_error::RuntimeError;
+use super::lox::Lox;
 use super::lox_function::LoxFunction;
 use super::native_functions::lox_clock::LoxClock;
 use super::native_functions::lox_print::LoxPrint;
@@ -136,7 +137,7 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
     fn visit_assing(&mut self, name: &Token, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         let value = self.evaluate(expr)?;
         let distance = self.locals.get(expr);
-
+        
         match distance {
             Some(d) => {
                 self.environment.borrow_mut().assing_at(*d, &name.lexeme, value.clone());
@@ -296,12 +297,7 @@ impl StatementVisitor<()> for Interpreter {
         Err(RuntimeError::Break())
     }
 
-    fn visit_function(
-        &mut self,
-        token: &Token,
-        params: &[Token],
-        body: &[Stmt],
-    ) -> Result<(), RuntimeError> {
+    fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt]) -> Result<(), RuntimeError> {
         let function = LoxFunction::new(
             Stmt::Function {
                 token: token.clone(),
@@ -311,8 +307,7 @@ impl StatementVisitor<()> for Interpreter {
             Rc::clone(&self.environment),
         );
 
-        self.environment
-            .borrow_mut().define(&token.lexeme, LiteralValue::Callable(Rc::new(function)))?;
+        self.environment.borrow_mut().define(&token.lexeme, LiteralValue::Callable(Rc::new(function)))?;
         Ok(())
     }
 
@@ -343,27 +338,27 @@ impl Interpreter {
         }
     }
 
-    pub fn execute_block(&mut self, statements: &[Stmt], environment: Rc<RefCell<Environment>>,) -> Result<(), RuntimeError> {
-        let previous = self.environment.clone();
-
-        self.environment = environment;
-
+    pub fn execute_block(&mut self, statements: &[Stmt], environment: Rc<RefCell<Environment>>) -> Result<(), RuntimeError> {    
+        let previous = std::mem::replace(&mut self.environment, environment);
+    
         for statement in statements {
-            self.execute(statement);
+            self.execute(statement)?;
         }
-
+    
         self.environment = previous;
         Ok(())
     }
-
+    
     fn evaluate(&mut self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         expr.accept(self)
     }
 
     pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<(), RuntimeError> {
+
         for statement in statements {
             self.execute(&statement)?;
         }
+
         Ok(())
     }
 
@@ -407,7 +402,7 @@ impl Interpreter {
 
     pub fn look_up_variable(&mut self, name: &Token, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         if let Some(opt) = self.locals.get(expr) {
-            return Ok(self.environment.borrow_mut().get_at(*opt, &name.lexeme)?);
+            return Ok(self.environment.borrow().get_at(*opt, &name.lexeme)?);
         } else {
             return Ok(self.globals.get(name)?);
         }

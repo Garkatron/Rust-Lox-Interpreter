@@ -1,4 +1,5 @@
 use super::error_types::runtime_error::RuntimeError;
+use super::lox::Lox;
 use super::syntax::components::expression::LiteralValue;
 use super::syntax::token::Token;
 use super::syntax::token_type::TokenType;
@@ -37,10 +38,11 @@ impl Environment {
         }
         Err(RuntimeError::UndefinedVariable(name.clone()))
     }
-
+    
     pub fn assign(&mut self, name: &Token, value: LiteralValue) -> Result<(), RuntimeError> {
         if self.values.contains_key(&name.lexeme) {
             self.values.insert(name.lexeme.clone(), value);
+            
             return Ok(());
         }
         if let Some(enclosing) = &self.enclosing {
@@ -48,18 +50,18 @@ impl Environment {
         }
         Err(RuntimeError::UndefinedVariable(name.clone()))
     }
-
+    
     pub fn ancestor(&self, distance: usize) -> Option<Rc<RefCell<Environment>>> {
-        let mut env = self.enclosing.clone();
+        let mut env = self.enclosing.as_ref().map(Rc::clone);
         for _ in 0..distance {
             env = match &env {
-                Some(e) => e.borrow().enclosing.clone(),
+                Some(e) => e.borrow_mut().enclosing.take(),
                 None => return None,
             };
         }
         env
     }
-
+    
     pub fn get_at(&self, distance: usize, name: &str) -> Result<LiteralValue, RuntimeError> {
         match self.ancestor(distance) {
             Some(env) => env.borrow().values.get(name).cloned().ok_or_else(|| {
