@@ -129,13 +129,24 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
     }
 
     fn visit_variable(&mut self, name: &Token, e: &Expr) -> Result<LiteralValue, RuntimeError> {
-        Ok(self.look_up_variable(name, e))
+        Ok(self.look_up_variable(name, e)?)
         // Ok(self.environment.borrow().get(name)?)
     }
 
     fn visit_assing(&mut self, name: &Token, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         let value = self.evaluate(expr)?;
-        self.environment.borrow_mut().assign(name, value.clone())?;
+        let distance = self.locals.get(expr);
+
+        match distance {
+            Some(d) => {
+                self.environment.borrow_mut().assing_at(*d, &name.lexeme, value.clone());
+            }
+            None => {
+                self.globals.assign(name, value.clone())?;
+            }
+        }
+
+        // self.environment.borrow_mut().assign(name, value.clone())?;
         Ok(value)
     }
 
@@ -394,11 +405,11 @@ impl Interpreter {
         self.locals.insert(expr, depth);
     }
 
-    pub fn look_up_variable(&mut self, name: &Token, expr: &Expr) -> LiteralValue {
+    pub fn look_up_variable(&mut self, name: &Token, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         if let Some(opt) = self.locals.get(expr) {
-            return self.environment.borrow_mut().get_at(*opt, &name.lexeme).expect("LOOK_UP_VARIABLE METHOD HAS AN ERROR");
+            return Ok(self.environment.borrow_mut().get_at(*opt, &name.lexeme)?);
         } else {
-            return self.globals.get(name).expect("LOOK_UP_VARIABLE METHOD HAS AN ERROR");
+            return Ok(self.globals.get(name)?);
         }
     }
 }

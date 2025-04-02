@@ -78,4 +78,15 @@ impl Environment {
             })),
         }
     }
+
+    pub fn assing_at(&mut self, distance: usize, name: &str, value: LiteralValue) {
+        match self.ancestor(distance) {
+            Some(e) => {
+                e.borrow_mut().values.insert(name.to_string(), value);
+            }
+            None => {
+                panic!("Environment, Assing at function failed ")
+            }
+        } 
+    }
 }
