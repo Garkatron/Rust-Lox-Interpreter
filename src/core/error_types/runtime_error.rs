@@ -13,7 +13,9 @@ pub enum RuntimeError {
     BadCallable(),
     ToMantyArguments(Token, usize, usize),
     NativeFunctionError(String),
-    Return(LiteralValue)
+    Return(LiteralValue),
+    BadArguments(String),
+    InvalidFunction(String)
 }
 
 impl fmt::Display for RuntimeError {
@@ -49,6 +51,12 @@ impl fmt::Display for RuntimeError {
             }
             RuntimeError::Return(_) => {
                 write!(f, "[RUNTIME]: return out of a function.")
+            }
+            RuntimeError::BadArguments(m) => {
+                write!(f,"{}", m)
+            }
+            RuntimeError::InvalidFunction(m) => {
+                write!(f,"{}", m)
             }
         }
     }

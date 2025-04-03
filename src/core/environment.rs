@@ -15,7 +15,7 @@ pub struct Environment {
 
 impl Environment {
     pub fn new(enclosing: Option<Rc<RefCell<Environment>>>) -> Self {
-        Environment {
+        Self {
             values: HashMap::new(),
             enclosing,
         }
@@ -52,7 +52,16 @@ impl Environment {
     }
     
     pub fn ancestor(&self, distance: usize) -> Option<Rc<RefCell<Environment>>> {
-        let mut env = self.enclosing.as_ref().map(Rc::clone);
+        let mut env = None; 
+        for _ in 0..distance {
+            env = match &env {
+                Some(e) => e.borrow_mut().enclosing.take(),
+                None => return None,
+            };
+        }
+    }
+    /*
+    let mut env = self.enclosing.as_ref().map(Rc::clone);
         for _ in 0..distance {
             env = match &env {
                 Some(e) => e.borrow_mut().enclosing.take(),
@@ -60,8 +69,8 @@ impl Environment {
             };
         }
         env
-    }
-    
+    */
+
     pub fn get_at(&self, distance: usize, name: &str) -> Result<LiteralValue, RuntimeError> {
         match self.ancestor(distance) {
             Some(env) => env.borrow().values.get(name).cloned().ok_or_else(|| {

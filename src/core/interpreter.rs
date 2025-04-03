@@ -17,8 +17,8 @@ use super::syntax::token_type::TokenType;
 
 pub struct Interpreter {
     pub globals: Box<Environment>,
-    environment: Rc<RefCell<Environment>>,
-    locals: FxHashMap<Expr, usize>,
+    pub environment: Rc<RefCell<Environment>>,
+    pub locals: FxHashMap<Expr, usize>,
 }
 
 impl ExpressionVisitor<LiteralValue> for Interpreter {
@@ -131,13 +131,13 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
 
     fn visit_variable(&mut self, name: &Token, e: &Expr) -> Result<LiteralValue, RuntimeError> {
         Ok(self.look_up_variable(name, e)?)
+
         // Ok(self.environment.borrow().get(name)?)
     }
 
     fn visit_assing(&mut self, name: &Token, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
         let value = self.evaluate(expr)?;
         let distance = self.locals.get(expr);
-        
         match distance {
             Some(d) => {
                 self.environment.borrow_mut().assing_at(*d, &name.lexeme, value.clone());
@@ -146,7 +146,6 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
                 self.globals.assign(name, value.clone())?;
             }
         }
-
         // self.environment.borrow_mut().assign(name, value.clone())?;
         Ok(value)
     }
@@ -401,6 +400,7 @@ impl Interpreter {
     }
 
     pub fn look_up_variable(&mut self, name: &Token, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
+    
         if let Some(opt) = self.locals.get(expr) {
             return Ok(self.environment.borrow().get_at(*opt, &name.lexeme)?);
         } else {

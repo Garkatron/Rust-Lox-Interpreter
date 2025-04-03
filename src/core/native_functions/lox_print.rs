@@ -12,7 +12,7 @@ impl LoxPrint {
 
 impl LoxCallable for LoxPrint {
     fn arity(&self) -> usize {
-        1 // O más si se permite más de un argumento
+        1
     }
 
     fn call(

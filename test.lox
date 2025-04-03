@@ -1,8 +1,7 @@
-var a = "outer";
+var temp = "a"; // Run the initializer.
+var a = "BB";        // Declare the variable.
+a = temp;     // Initialize it.
 
-fun test() {
-    print(a);
-}
+
 
 print(a);
-test();

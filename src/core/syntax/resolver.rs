@@ -91,14 +91,14 @@ impl ExpressionVisitor<()> for Resolver {
 
 impl StatementVisitor<()> for Resolver {
     fn visit_block(&mut self, statements: &[Stmt]) -> Result<(), RuntimeError> {
-        self.being_scope();
+        self.begin_scope();
         self.resolve_statements(statements)?;
         self.end_scope();
         Ok(())
     }
     fn visit_var(&mut self, name: &Token, initializer: &Expr) -> Result<(), RuntimeError> {
         self.declare(name);
-    
+        
         match initializer {
             Expr::Literal { value, .. } => {
                 if *value != LiteralValue::Nil {
@@ -169,8 +169,16 @@ impl StatementVisitor<()> for Resolver {
 
 impl Resolver {
     pub fn new(interpreter: Rc<RefCell<Interpreter>>) -> Self {
-        Self { interpreter, scopes: vec![], current_function: FunctionType::NONE }
+        let mut resolver = Self {
+            interpreter,
+            scopes: vec![],
+            current_function: FunctionType::NONE,
+        };
+    
+        resolver.begin_scope();
+        resolver
     }
+    
 
     pub fn resolve_statements(&mut self, statements: &[Stmt]) -> Result<(), RuntimeError> {
         for stmt in statements {
@@ -192,7 +200,7 @@ impl Resolver {
         if let Stmt::Function { params, body , ..} = function {
             let enclosing_function = self.current_function;
             self.current_function = ftype;
-            self.being_scope();
+            self.begin_scope();
             for param in params {
                 self.declare(&param);
                 self.define(&param);
@@ -204,7 +212,7 @@ impl Resolver {
         Ok(())
     }
 
-    fn being_scope(&mut self) {
+    fn begin_scope(&mut self) {
         self.scopes.push(FxHashMap::default());
     }
 
@@ -234,12 +242,13 @@ impl Resolver {
     
 
     fn define(&mut self, name: &Token) {
-        if self.scopes.is_empty() {
-            return;
+        if let Some(scope) = self.scopes.last_mut() {
+            scope.insert(name.lexeme.clone(), true);
+        } else {
+            Lox::print_error("No hay un scope válido para definir la variable.");
         }
-        let scope = self.scopes.last_mut().unwrap();
-        scope.insert(name.lexeme.clone(), true);
     }
+    
 
     fn resolve_local(&self, expr: &Expr, name: &Token) {
         for i in 0..self.scopes.len() {
