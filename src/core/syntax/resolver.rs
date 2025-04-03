@@ -90,6 +90,11 @@ impl ExpressionVisitor<()> for Resolver {
     fn visit_comma(&mut self, _left: &Expr, _right: &Expr) -> Result<(), RuntimeError> {
         Ok(())
     }
+
+    fn visit_get(&mut self, _name: &Token, object: &Expr) -> Result<(), RuntimeError> {
+        self.resolve_expr(object)?;
+        Ok(())
+    }
 }
 
 impl StatementVisitor<()> for Resolver {

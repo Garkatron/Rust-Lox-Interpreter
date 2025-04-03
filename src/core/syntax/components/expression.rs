@@ -27,6 +27,10 @@ pub enum Expr {
         paren: Token,
         arguments: Vec<Expr>,
     },
+    Get {
+        object: Box<Expr>,
+        name: Token
+    },
     Grouping {
         id: usize,
         expression: Box<Expr>,
@@ -137,6 +141,7 @@ pub trait Visitor<R> {
     fn visit_variable(&mut self, name: &Token, value: &Expr) -> Result<R, RuntimeError>;
     fn visit_assing(&mut self, name: &Token, value: &Expr) -> Result<R, RuntimeError>;
     fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
+    fn visit_get(&mut self, name: &Token, object: &Expr) -> Result<R, RuntimeError>;
 }
 
 impl Expr {
@@ -165,6 +170,9 @@ impl Expr {
             }
             Expr::Call { callee, paren, arguments , ..} => {
                 visitor.visit_call(callee, paren, arguments)
+            }
+            Expr::Get { object, name } => {
+                visitor.visit_get(name, object)
             }
         }
     }
@@ -235,6 +243,9 @@ impl fmt::Display for Expr {
             }
             Expr::Call { callee, paren, arguments, .. } => {
                 write!(f, "{}({} {:?})", callee, paren, arguments)
+            },
+            Expr::Get { object, name } => {
+                write!(f, "{}, {:?}", name, object)
             }
         }
     }

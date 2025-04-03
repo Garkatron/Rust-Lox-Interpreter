@@ -15,7 +15,9 @@ pub enum RuntimeError {
     NativeFunctionError(String),
     Return(LiteralValue),
     BadArguments(String),
-    InvalidFunction(String)
+    InvalidFunction(String),
+    OnlyInstancesHaveProperties(),
+    UndefinedProperty()
 }
 
 impl fmt::Display for RuntimeError {
@@ -53,10 +55,17 @@ impl fmt::Display for RuntimeError {
                 write!(f, "[RUNTIME]: return out of a function.")
             }
             RuntimeError::BadArguments(m) => {
-                write!(f,"{}", m)
+                write!(f,"[RUNTIME]: Bad arguments {}", m)
             }
             RuntimeError::InvalidFunction(m) => {
-                write!(f,"{}", m)
+                write!(f,"[RUNTIME]: Invalid function {}", m)
+            }
+            RuntimeError::OnlyInstancesHaveProperties() => {
+                write!(f,"[RUNTIME]: Only instances have properties.")
+            }
+            RuntimeError::UndefinedProperty() => {
+                write!(f,"[RUNTIME]: Inexistent property.")
+
             }
         }
     }

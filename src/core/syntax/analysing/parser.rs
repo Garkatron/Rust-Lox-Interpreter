@@ -50,7 +50,7 @@ impl Parser {
 
     fn class_declaration(&mut self) -> Result<Stmt, ParseError> {
         let name = self.consume(IDENTIFIER, ParseError::ExpectClassName(self.peek().line))?;
-        self.consume(LEFT_BRACE, ParseError::ExpectedLeftBraceAfterClassBody(self.peek().line));
+        self.consume(LEFT_BRACE, ParseError::ExpectedLeftBraceAfterClassBody(self.peek().line))?;
        
         let mut methods = vec![];
 
@@ -58,7 +58,7 @@ impl Parser {
             methods.push(self.function("method")?);
         }
         
-        self.consume(RIGHT_BRACE, ParseError::ExpectedRightBraceAfterClassBody(self.peek().line));
+        self.consume(RIGHT_BRACE, ParseError::ExpectedRightBraceAfterClassBody(self.peek().line))?;
 
         Ok(Stmt::Class { name: name, methods: methods })
     }
@@ -586,6 +586,9 @@ impl Parser {
         loop {
             if self.match_tokens(&[LEFT_PAREN]) {
                 expr = self.finish_call(expr)?;
+            } else if self.match_tokens(&[DOT]) {
+                let name = self.consume(IDENTIFIER, ParseError::ExpectedPropertyNameAfterDot(self.peek().line))?;
+                expr = Expr::Get { object: Box::new(expr), name: name }
             } else {
                 break;
             }

@@ -196,6 +196,20 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
             return Err(RuntimeError::BadCallable());
         }
     }
+
+    fn visit_get(&mut self, name: &Token, object: &Expr) -> Result<LiteralValue, RuntimeError> {
+        let obj = self.evaluate(object)?;
+        match obj {
+            LiteralValue::LoxInstance(i) => {
+                Ok(i.get(name))
+            }
+            _=> {
+
+            }
+        }
+
+        Err(RuntimeError::OnlyInstancesHaveProperties())
+    }
 }
 impl StatementVisitor<()> for Interpreter {
     fn visit_expression(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
@@ -316,7 +330,7 @@ impl StatementVisitor<()> for Interpreter {
         Err(RuntimeError::Return(val))
     }
 
-    fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<(), RuntimeError> {
+    fn visit_class(&mut self, name: &Token, _methods: &[Stmt]) -> Result<(), RuntimeError> {
         self.environment.borrow_mut().define(&name.lexeme, LiteralValue::Nil);
         let loxclass = LoxClass::new(name.lexeme.clone());
         self.environment.borrow_mut().assign(name, LiteralValue::LoxClass(loxclass));

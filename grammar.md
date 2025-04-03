@@ -64,7 +64,7 @@ unary          → ( "!" | "-" ) unary
                | call
                | primary ;
 
-call           → primary ( "(" arguments? ")" )* ;
+call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 arguments      → expression ( "," expression )* ;
 
 primary        → "true" | "false" | "nil"

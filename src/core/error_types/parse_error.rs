@@ -27,7 +27,8 @@ pub enum ParseError {
     TooManyArguments(usize),
     ExpectedIdentifier(usize, String),
     ExpectedParameterName(usize),
-    ExpectClassName(usize)
+    ExpectClassName(usize),
+    ExpectedPropertyNameAfterDot(usize)
 }
 
 impl fmt::Display for ParseError {
@@ -105,6 +106,9 @@ impl fmt::Display for ParseError {
             }
             ParseError::ExpectedRightBraceAfterClassBody(line) => {
                 write!(f, "[PARSER]: Expect '}}' after class body. At line {}", line)
+            }
+            ParseError::ExpectedPropertyNameAfterDot(line) => {
+                write!(f, "[PARSER]: Expected property name after '.' at line {}", line)
             }
         }
     }
@@ -186,6 +190,9 @@ impl ParseError {
             }
             ParseError::ExpectClassName(line) => {
                 format!("[PARSER]: Expect '}}' after class body. At line {}", line)
+            }
+            ParseError::ExpectedPropertyNameAfterDot(line) => {
+                format!("[PARSER]: Expected property name after '.' at line {}", line)
             }
         }
     }
