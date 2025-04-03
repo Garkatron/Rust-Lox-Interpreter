@@ -2,6 +2,9 @@ var temp = "a"; // Run the initializer.
 var a = "BB";        // Declare the variable.
 a = temp;     // Initialize it.
 
+fun test() {
+    a = temp;
+}
 
-
+test();
 print(a);

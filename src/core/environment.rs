@@ -52,13 +52,14 @@ impl Environment {
     }
     
     pub fn ancestor(&self, distance: usize) -> Option<Rc<RefCell<Environment>>> {
-        let mut env = None; 
+        let mut env = Some(Rc::new(RefCell::new(self.clone()))); 
         for _ in 0..distance {
             env = match &env {
                 Some(e) => e.borrow_mut().enclosing.take(),
                 None => return None,
             };
         }
+        env
     }
     /*
     let mut env = self.enclosing.as_ref().map(Rc::clone);
