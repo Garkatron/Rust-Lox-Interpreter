@@ -21,6 +21,7 @@ pub enum FunctionType {
 pub struct Resolver {
     interpreter: Rc<RefCell<Interpreter>>,
     scopes: Vec<FxHashMap<String, bool>>,
+    unused_variables: Vec<String>,
     current_function: FunctionType
 }
 
@@ -34,15 +35,17 @@ impl ExpressionVisitor<()> for Resolver {
                 );
             }
         }
-    
+        
+        self.mark_as_used(&name.lexeme);
+
         self.resolve_local(expr, name);
         Ok(())
     }
-    
-    
     fn visit_assing(&mut self, name: &Token, value: &Expr) -> Result<(), RuntimeError> {
         self.resolve_expr(value)?;
         self.resolve_local(value, name);
+        self.mark_as_used(&name.lexeme);
+
         Ok(())
     }
     fn visit_binary(&mut self, left: &Expr, _operator: &Token, right: &Expr) -> Result<(), RuntimeError> {
@@ -111,6 +114,7 @@ impl StatementVisitor<()> for Resolver {
         }
     
         self.define(name);
+        self.unused_variables.push(name.lexeme.clone());
     
         Ok(())
     }
@@ -172,13 +176,23 @@ impl Resolver {
         let mut resolver = Self {
             interpreter,
             scopes: vec![],
+            unused_variables: vec![],
             current_function: FunctionType::NONE,
         };
     
         resolver.begin_scope();
         resolver
     }
-    
+
+    fn mark_as_used(&mut self, name: &String) {
+        if let Some(pos) = self.unused_variables.iter().position(|x| *x==*name) {
+            self.unused_variables.remove(pos);
+        }
+    }
+
+    pub fn get_unused_variables(&self) -> &Vec<String> {
+        &self.unused_variables
+    }
 
     pub fn resolve_statements(&mut self, statements: &[Stmt]) -> Result<(), RuntimeError> {
         for stmt in statements {
@@ -228,7 +242,7 @@ impl Resolver {
         if let Some(scope) = self.scopes.last_mut() {
             if scope.contains_key(&name.lexeme) {
                 Lox::print_error(&format!(
-                    "Ya existe una variable llamada [{}] en este scope.",
+                    "Already exists a variable called [{}] at the current scope.",
                     &name.lexeme
                 ));
                 return;  
@@ -236,7 +250,7 @@ impl Resolver {
     
             scope.insert(name.lexeme.clone(), false);
         } else {
-            Lox::print_error("No hay un scope válido para declarar la variable.");
+            Lox::print_error("Doens't exists valid scope to declare this variable.");
         }
     }
     
@@ -245,7 +259,7 @@ impl Resolver {
         if let Some(scope) = self.scopes.last_mut() {
             scope.insert(name.lexeme.clone(), true);
         } else {
-            Lox::print_error("No hay un scope válido para definir la variable.");
+            Lox::print_error("Doens't exists a valid scope to define this variable.");
         }
     }
     

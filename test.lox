@@ -1,10 +1,12 @@
 var temp = "a"; // Run the initializer.
 var a = "BB";        // Declare the variable.
 a = temp;     // Initialize it.
+var c;
+var b = "";
 
 fun test() {
-    a = temp;
+    var a = "a";
+    print(b);
 }
 
-test();
 print(a);

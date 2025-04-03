@@ -35,6 +35,11 @@ impl Lox {
         Color::ecprintln(&format!("[ERROR]: {}", msg), Color::Red);
     }
 
+    pub fn print_warn(msg: &str) {
+        Color::ecprintln(&format!("[WARNING]: {}", msg), Color::Yellow);
+    }
+
+
     pub fn print_message(msg: &str) {
         Color::cprintln(&format!("[LOX]: {}", msg), Color::Green);
     }
@@ -118,12 +123,14 @@ impl Lox {
 
         match parser.parse() {
             Ok(statements) => {
-                Color::cprintln("========== RESULTADO ==========", Color::Yellow);      
+                Color::cprintln("========== RESULTADO ==========\n", Color::Yellow);      
 
                 if let Err(e) = resolver.resolve_statements(&statements) {
                     Self::print_error(&format!("On resolving: {}", e));
                     return;
                 }
+
+                Lox::print_warn(&format!("Unused variables {:?}", resolver.get_unused_variables()));
 
                 match interpreter.borrow_mut().interpret(statements) {
                     Ok(_) => {
