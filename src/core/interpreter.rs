@@ -392,7 +392,8 @@ impl Interpreter {
             LiteralValue::String(s) => s.clone(),
             LiteralValue::Boolean(b) => b.to_string(),
             LiteralValue::Callable(_) => "Function".to_string(),
-            LiteralValue::LoxInstance(l) => l.to_string()
+            LiteralValue::LoxInstance(l) => l.to_string(),
+            LiteralValue::LoxClass(c) => c.to_string()
         }
     }
 

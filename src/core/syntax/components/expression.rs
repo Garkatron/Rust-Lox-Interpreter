@@ -115,6 +115,9 @@ impl Hash for LiteralValue {
             LiteralValue::LoxInstance(_) => {
                 panic!("No se puede hacer hash de un Instance");
             }
+            LiteralValue::LoxClass(_) => {
+                panic!("No se puede hacer hash de un Class");
+            }
         }
     }
 }
@@ -179,11 +182,14 @@ impl fmt::Display for LiteralValue {
             LiteralValue::String(s) => write!(f, "\"{}\"", s),
             LiteralValue::Boolean(b) => write!(f, "{}", b),
             LiteralValue::Callable(_d) => {
-                write!(f, "{:?}", "FUNCTION")
+                write!(f, "{:?}", "Function")
             }
             LiteralValue::Nil => write!(f, "nil"),
             LiteralValue::LoxInstance(i) => {
                 write!(f, "Instance of {}", i.lox_class.borrow().name)
+            }
+            LiteralValue::LoxClass(c) => {
+                write!(f, "Class {}", c.name)
             }
         }
     }
@@ -244,6 +250,9 @@ impl fmt::Debug for LiteralValue {
             LiteralValue::Nil => write!(f, "Nil"),
             LiteralValue::LoxInstance(i) => {
                 write!(f, "LoxInstance {}", i.lox_class.borrow().name)
+            }
+            LiteralValue::LoxClass(c) => {
+                write!(f, "LoxClass {}", c.name)
             }
         }
     }
