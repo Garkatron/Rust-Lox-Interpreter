@@ -168,6 +168,11 @@ impl StatementVisitor<()> for Resolver {
         self.resolve_statement(body)?;
         Ok(())
     }
+    fn visit_class(&mut self, name: &Token, _methods: &[Stmt]) -> Result<(), RuntimeError> {
+        self.declare(name);
+        self.define(name);
+        Ok(())
+    }
 
 }
 

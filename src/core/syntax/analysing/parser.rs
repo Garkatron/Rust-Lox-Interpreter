@@ -35,6 +35,9 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> Result<Stmt, ParseError> {
+        if self.match_tokens(&[CLASS]) {
+            return self.class_declaration();
+        }
         if self.match_tokens(&[FUN]) {
             return self.function("function");
         }
@@ -44,6 +47,22 @@ impl Parser {
 
         self.statement()
     }
+
+    fn class_declaration(&mut self) -> Result<Stmt, ParseError> {
+        let name = self.consume(IDENTIFIER, ParseError::ExpectClassName(self.peek().line))?;
+        self.consume(LEFT_BRACE, ParseError::ExpectedLeftBraceAfterClassBody(self.peek().line));
+       
+        let mut methods = vec![];
+
+        while self.check(RIGHT_BRACE) && !self.is_at_end() {
+            methods.push(self.function("method")?);
+        }
+        
+        self.consume(RIGHT_BRACE, ParseError::ExpectedRightBraceAfterClassBody(self.peek().line));
+
+        Ok(Stmt::Class { name: name, methods: methods })
+    }
+
     fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
         let name = self.consume(
             IDENTIFIER,

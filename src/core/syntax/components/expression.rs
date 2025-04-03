@@ -1,5 +1,7 @@
 use std::{fmt, rc::Rc, sync::atomic::Ordering};
 
+use crate::core::lox_class::LoxClass;
+use crate::core::lox_instance::LoxInstance;
 use crate::core::{error_types::runtime_error::RuntimeError, lox_callable::LoxCallable, syntax::token::Token};
 use std::sync::atomic::AtomicUsize;
 static NEXT_ID: AtomicUsize = AtomicUsize::new(1);
@@ -67,6 +69,8 @@ pub enum LiteralValue {
     String(String),
     Boolean(bool),
     Callable(Rc<dyn LoxCallable>),
+    LoxInstance(Rc<LoxInstance>),
+    LoxClass(LoxClass),
     Nil,
 }
 
@@ -101,13 +105,15 @@ impl Hash for LiteralValue {
         match self {
             LiteralValue::Boolean(b) => b.hash(state),
             LiteralValue::Number(n) => {
-                // Convertimos el número a bits para evitar problemas de precisión
                 n.to_bits().hash(state);
             }
             LiteralValue::String(s) => s.hash(state),
-            LiteralValue::Nil => state.write_u8(0), // Representamos Nil con un valor fijo
+            LiteralValue::Nil => state.write_u8(0), 
             LiteralValue::Callable(_) => {
                 panic!("No se puede hacer hash de un Callable");
+            }
+            LiteralValue::LoxInstance(_) => {
+                panic!("No se puede hacer hash de un Instance");
             }
         }
     }
@@ -176,6 +182,9 @@ impl fmt::Display for LiteralValue {
                 write!(f, "{:?}", "FUNCTION")
             }
             LiteralValue::Nil => write!(f, "nil"),
+            LiteralValue::LoxInstance(i) => {
+                write!(f, "Instance of {}", i.lox_class.borrow().name)
+            }
         }
     }
 }
@@ -233,6 +242,9 @@ impl fmt::Debug for LiteralValue {
             LiteralValue::Boolean(b) => write!(f, "Boolean({})", b),
             LiteralValue::Callable(_) => write!(f, "Callable(<function>)"),
             LiteralValue::Nil => write!(f, "Nil"),
+            LiteralValue::LoxInstance(i) => {
+                write!(f, "LoxInstance {}", i.lox_class.borrow().name)
+            }
         }
     }
 }

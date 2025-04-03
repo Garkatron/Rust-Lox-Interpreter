@@ -1,9 +1,12 @@
 ```
 program        → declaration* EOF ;
 
-declaration    → funDecl
+declaration    → classDecl 
+               | funDecl
                | varDecl
                | statement ;
+
+classDecl      → "class" IDENTIFIER "{" function* "}" ;
 
 statement      → exprStmt
                | forStmt

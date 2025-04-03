@@ -7,6 +7,7 @@ use rustc_hash::FxHashMap;
 use super::environment::Environment;
 use super::error_types::runtime_error::RuntimeError;
 use super::lox::Lox;
+use super::lox_class::LoxClass;
 use super::lox_function::LoxFunction;
 use super::native_functions::lox_clock::LoxClock;
 use super::native_functions::lox_print::LoxPrint;
@@ -314,6 +315,13 @@ impl StatementVisitor<()> for Interpreter {
         let val = self.evaluate(v)?;
         Err(RuntimeError::Return(val))
     }
+
+    fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<(), RuntimeError> {
+        self.environment.borrow_mut().define(&name.lexeme, LiteralValue::Nil);
+        let loxclass = LoxClass::new(name.lexeme.clone());
+        self.environment.borrow_mut().assign(name, LiteralValue::LoxClass(loxclass));
+        Ok(())
+    }
 }
 
 impl Interpreter {
@@ -384,6 +392,7 @@ impl Interpreter {
             LiteralValue::String(s) => s.clone(),
             LiteralValue::Boolean(b) => b.to_string(),
             LiteralValue::Callable(_) => "Function".to_string(),
+            LiteralValue::LoxInstance(l) => l.to_string()
         }
     }
 
