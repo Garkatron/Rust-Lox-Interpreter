@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::{fmt, rc::Rc, sync::atomic::Ordering};
 
 use crate::core::lox_class::LoxClass;
@@ -7,6 +8,7 @@ use std::sync::atomic::AtomicUsize;
 static NEXT_ID: AtomicUsize = AtomicUsize::new(1);
 use std::hash::Hasher;
 use std::hash::Hash;
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum Expr {
     Binary {
@@ -30,6 +32,11 @@ pub enum Expr {
     Get {
         object: Box<Expr>,
         name: Token
+    },
+    Set {
+        object: Box<Expr>,
+        name: Token,
+        value: Box<Expr>
     },
     Grouping {
         id: usize,
@@ -73,7 +80,7 @@ pub enum LiteralValue {
     String(String),
     Boolean(bool),
     Callable(Rc<dyn LoxCallable>),
-    LoxInstance(Rc<LoxInstance>),
+    LoxInstance(Rc<RefCell<LoxInstance>>),
     LoxClass(LoxClass),
     Nil,
 }
@@ -142,6 +149,7 @@ pub trait Visitor<R> {
     fn visit_assing(&mut self, name: &Token, value: &Expr) -> Result<R, RuntimeError>;
     fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
     fn visit_get(&mut self, name: &Token, object: &Expr) -> Result<R, RuntimeError>;
+    fn visit_set(&mut self, object: &Expr, name: &Token, value: &Expr) -> Result<R, RuntimeError>;
 }
 
 impl Expr {
@@ -174,6 +182,9 @@ impl Expr {
             Expr::Get { object, name } => {
                 visitor.visit_get(name, object)
             }
+            Expr::Set { object, name, value } => {
+                visitor.visit_set(object, name, value)
+            }
         }
     }
 
@@ -194,7 +205,7 @@ impl fmt::Display for LiteralValue {
             }
             LiteralValue::Nil => write!(f, "nil"),
             LiteralValue::LoxInstance(i) => {
-                write!(f, "Instance of {}", i.lox_class.borrow().name)
+                write!(f, "Instance of {}", i.borrow().lox_class.borrow().name)
             }
             LiteralValue::LoxClass(c) => {
                 write!(f, "Class {}", c.name)
@@ -247,6 +258,9 @@ impl fmt::Display for Expr {
             Expr::Get { object, name } => {
                 write!(f, "{}, {:?}", name, object)
             }
+            Expr::Set { object, name, value } => {
+                write!(f, "{}, {}, {:?}", value, name, object)
+            }
         }
     }
 }
@@ -260,7 +274,7 @@ impl fmt::Debug for LiteralValue {
             LiteralValue::Callable(_) => write!(f, "Callable(<function>)"),
             LiteralValue::Nil => write!(f, "Nil"),
             LiteralValue::LoxInstance(i) => {
-                write!(f, "LoxInstance {}", i.lox_class.borrow().name)
+                write!(f, "LoxInstance {}", i.borrow().lox_class.borrow().name)
             }
             LiteralValue::LoxClass(c) => {
                 write!(f, "LoxClass {}", c.name)

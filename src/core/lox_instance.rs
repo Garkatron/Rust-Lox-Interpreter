@@ -23,12 +23,16 @@ impl LoxInstance {
         }
     }
 
-    fn get(&self, name: &Token) -> Result<LiteralValue, RuntimeError> {
+    pub fn get(&self, name: &Token) -> Result<LiteralValue, RuntimeError> {
         if let Some(v) = self.fields.get(&name.lexeme) {
             Ok(v.clone())
         } else {
             Err(RuntimeError::UndefinedProperty())
         }
+    }
+
+    pub fn set(&mut self, name: Token, value: LiteralValue) {
+        self.fields.insert(name.lexeme, value);
     }
     
 }

@@ -201,7 +201,7 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         let obj = self.evaluate(object)?;
         match obj {
             LiteralValue::LoxInstance(i) => {
-                Ok(i.get(name))
+                return Ok(i.borrow().get(name)?)
             }
             _=> {
 
@@ -209,6 +209,21 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         }
 
         Err(RuntimeError::OnlyInstancesHaveProperties())
+    }
+
+    fn visit_set(&mut self, object: &Expr, name: &Token, value: &Expr) -> Result<LiteralValue, RuntimeError> {
+        let obj = self.evaluate(object)?;
+
+        match obj {
+            LiteralValue::LoxInstance(i) => {
+                let value = self.evaluate(value)?;
+                i.borrow_mut().set(name.clone(), value.clone());
+                Ok(value)
+            }
+            _ => {
+                Err(RuntimeError::OnlyInstancesHaveProperties())
+            }
+        }
     }
 }
 impl StatementVisitor<()> for Interpreter {
@@ -406,7 +421,7 @@ impl Interpreter {
             LiteralValue::String(s) => s.clone(),
             LiteralValue::Boolean(b) => b.to_string(),
             LiteralValue::Callable(_) => "Function".to_string(),
-            LiteralValue::LoxInstance(l) => l.to_string(),
+            LiteralValue::LoxInstance(l) => l.borrow().to_string(),
             LiteralValue::LoxClass(c) => c.to_string()
         }
     }

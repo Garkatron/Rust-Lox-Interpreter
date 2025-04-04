@@ -411,6 +411,9 @@ impl Parser {
                         value: Box::new(value),
                     })
                 }
+                Expr::Get { object, name } => {
+                    return Ok(Expr::Set { object, name, value: Box::new(value) })
+                }
                 _ => Color::ecprintln(
                     &ParseError::InvalidAssignmentTarget(self.current).to_string(),
                     Color::Red,

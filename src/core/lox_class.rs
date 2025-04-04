@@ -26,9 +26,10 @@ impl LoxCallable for Rc<RefCell<LoxClass>> {
     }
     
     fn call(&self, _interpreter: &mut Interpreter, _arguments: Vec<LiteralValue>) -> Result<LiteralValue, RuntimeError> {
-        let loxinstance = LoxInstance::new(Rc::clone(self));
-        Ok(LiteralValue::LoxInstance(Rc::new(loxinstance)))
+        let loxinstance = Rc::new(RefCell::new(LoxInstance::new(Rc::clone(self))));
+        Ok(LiteralValue::LoxInstance(Rc::clone(&loxinstance)))
     }
+    
 }
 
 impl Display for LoxClass {

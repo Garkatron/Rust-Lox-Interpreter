@@ -95,6 +95,11 @@ impl ExpressionVisitor<()> for Resolver {
         self.resolve_expr(object)?;
         Ok(())
     }
+    fn visit_set(&mut self, object: &Expr, _name: &Token, value: &Expr) -> Result<(), RuntimeError> {
+        self.resolve_expr(value)?;
+        self.resolve_expr(object)?;
+        Ok(())
+    }
 }
 
 impl StatementVisitor<()> for Resolver {
