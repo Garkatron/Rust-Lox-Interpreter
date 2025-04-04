@@ -18,12 +18,18 @@ pub enum FunctionType {
     METHOD,
     FUNCTION
 }
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum ClassType {
+    NONE,
+    CLASS
+}
 
 pub struct Resolver {
     interpreter: Rc<RefCell<Interpreter>>,
     scopes: Vec<FxHashMap<String, bool>>,
     unused_variables: Vec<String>,
-    current_function: FunctionType
+    current_function: FunctionType,
+    current_class: ClassType
 }
 
 impl ExpressionVisitor<()> for Resolver {
@@ -102,6 +108,10 @@ impl ExpressionVisitor<()> for Resolver {
         Ok(())
     }
     fn visit_this(&mut self, keyword: &Token) -> Result<(), RuntimeError> {
+        if self.current_class == ClassType::NONE {
+            Lox::print_error("Can't use 'this' outside a class.");
+            return Ok(())
+        }
         self.resolve_local(&Expr::Literal { id: 0, value: LiteralValue::Nil },keyword);
         Ok(())
     }
@@ -184,6 +194,10 @@ impl StatementVisitor<()> for Resolver {
         Ok(())
     }
     fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<(), RuntimeError> {
+        
+        let enclosing_class = self.current_class;
+        self.current_class = ClassType::CLASS;
+
         self.declare(name);
         self.define(name);
 
@@ -211,6 +225,7 @@ impl Resolver {
             scopes: vec![],
             unused_variables: vec![],
             current_function: FunctionType::NONE,
+            current_class: ClassType::CLASS
         };
     
         resolver.begin_scope();
