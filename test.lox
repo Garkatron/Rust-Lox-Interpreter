@@ -1,12 +1,7 @@
-var temp = "a"; // Run the initializer.
-var a = "BB";        // Declare the variable.
-a = temp;     // Initialize it.
-var c;
-var b = "";
-
-fun test() {
-    var a = "a";
-    print(b);
+class Bacon {
+  eat() {
+    print "Crunch crunch crunch!";
+  }
 }
 
-print(a);
+Bacon().eat(); // Prints "Crunch crunch crunch!".

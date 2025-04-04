@@ -15,6 +15,7 @@ use crate::utils::colors::Color;
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum FunctionType {
     NONE,
+    METHOD,
     FUNCTION
 }
 
@@ -178,9 +179,15 @@ impl StatementVisitor<()> for Resolver {
         self.resolve_statement(body)?;
         Ok(())
     }
-    fn visit_class(&mut self, name: &Token, _methods: &[Stmt]) -> Result<(), RuntimeError> {
+    fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<(), RuntimeError> {
         self.declare(name);
         self.define(name);
+
+        for method in methods {
+            let declaration = FunctionType::METHOD;
+            self.resolve_function(method.clone(), declaration)?;
+        }
+
         Ok(())
     }
 

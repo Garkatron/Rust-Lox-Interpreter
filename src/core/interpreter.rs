@@ -184,7 +184,7 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
 
         if let Some(fun) = callee_val.return_fn_if_callable() {
             if arguments.len() != fun.arity() {
-                return Err(RuntimeError::ToMantyArguments(
+                return Err(RuntimeError::ToManyArguments(
                     paren.clone(),
                     fun.arity(),
                     arguments.len(),
@@ -345,10 +345,26 @@ impl StatementVisitor<()> for Interpreter {
         Err(RuntimeError::Return(val))
     }
 
-    fn visit_class(&mut self, name: &Token, _methods: &[Stmt]) -> Result<(), RuntimeError> {
-        self.environment.borrow_mut().define(&name.lexeme, LiteralValue::Nil);
-        let loxclass = LoxClass::new(name.lexeme.clone());
-        self.environment.borrow_mut().assign(name, LiteralValue::LoxClass(loxclass));
+    fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<(), RuntimeError> {
+        self.environment.borrow_mut().define(&name.lexeme, LiteralValue::Nil)?;
+      
+
+        let mut met = FxHashMap::default();
+        for method in methods  {
+            match method {
+                Stmt::Function { token, params: _, body: _ } => {
+                    let function = LoxFunction::new(method.clone(), Rc::clone(&self.environment));
+                    met.insert(token.lexeme.clone(), function);
+                }
+                _ => {
+
+                }
+            }
+        }
+
+        let loxclass = LoxClass::new(name.lexeme.clone(), met);
+        self.environment.borrow_mut().assign(name, LiteralValue::LoxClass(loxclass))?;
+
         Ok(())
     }
 }
@@ -420,9 +436,10 @@ impl Interpreter {
             LiteralValue::Number(n) => n.to_string(),
             LiteralValue::String(s) => s.clone(),
             LiteralValue::Boolean(b) => b.to_string(),
-            LiteralValue::Callable(_) => "Function".to_string(),
+            LiteralValue::Callable(_) => "Callable".to_string(),
             LiteralValue::LoxInstance(l) => l.borrow().to_string(),
-            LiteralValue::LoxClass(c) => c.to_string()
+            LiteralValue::LoxClass(c) => c.to_string(),
+            LiteralValue::LoxFunction(f) => f.to_string()
         }
     }
 

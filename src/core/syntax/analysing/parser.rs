@@ -54,13 +54,13 @@ impl Parser {
        
         let mut methods = vec![];
 
-        while self.check(RIGHT_BRACE) && !self.is_at_end() {
+        while !self.check(RIGHT_BRACE) && !self.is_at_end() {
             methods.push(self.function("method")?);
         }
         
         self.consume(RIGHT_BRACE, ParseError::ExpectedRightBraceAfterClassBody(self.peek().line))?;
 
-        Ok(Stmt::Class { name: name, methods: methods })
+        Ok(Stmt::Class { name, methods })
     }
 
     fn var_declaration(&mut self) -> Result<Stmt, ParseError> {

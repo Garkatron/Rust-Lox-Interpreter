@@ -1,4 +1,5 @@
-use std::{cell::RefCell, rc::Rc};
+use core::fmt;
+use std::{cell::RefCell, fmt::{Display, Formatter}, rc::Rc};
 
 use super::{
     environment::Environment, 
@@ -7,6 +8,7 @@ use super::{
     lox_callable::LoxCallable, 
     syntax::components::{expression::LiteralValue, stmt::Stmt}
 };
+#[derive(Clone, Debug)]
 
 pub struct LoxFunction {
     declaration: Stmt,
@@ -18,6 +20,7 @@ impl LoxFunction {
         Self { declaration, closure }
     }
 }
+
 
 impl LoxCallable for LoxFunction {
     fn call(
@@ -57,5 +60,11 @@ impl LoxCallable for LoxFunction {
         } else {
             0
         }
+    }
+}
+
+impl Display for LoxFunction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "LoxFunction()")
     }
 }

@@ -11,7 +11,7 @@ pub enum RuntimeError {
     BadExpr(),
     Break(),
     BadCallable(),
-    ToMantyArguments(Token, usize, usize),
+    ToManyArguments(Token, usize, usize),
     NativeFunctionError(String),
     Return(LiteralValue),
     BadArguments(String),
@@ -44,7 +44,7 @@ impl fmt::Display for RuntimeError {
             RuntimeError::BadCallable() => {
                 write!(f, "[RUNTIME]: Can only call functions and classes.")
             }
-            RuntimeError::ToMantyArguments(paren, arity , args_size) => {
+            RuntimeError::ToManyArguments(paren, arity , args_size) => {
                 write!(f, "[RUNTIME]: {} Expected {} arguments but got {}.", paren, arity, args_size)
         
             }

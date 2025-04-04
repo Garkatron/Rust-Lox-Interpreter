@@ -11,12 +11,12 @@ use super::syntax::token::Token;
 use std::fmt::Display;
 use std::fmt::Formatter;
 pub struct LoxInstance {
-    pub lox_class: Rc<RefCell<LoxClass>>,
+    pub lox_class: LoxClass,
     fields: FxHashMap<String, LiteralValue>
 }
 
 impl LoxInstance {
-    pub fn new(lox_class: Rc<RefCell<LoxClass>>) -> LoxInstance {
+    pub fn new(lox_class: LoxClass) -> LoxInstance {
         Self {
             lox_class,
             fields: FxHashMap::default()
@@ -25,10 +25,17 @@ impl LoxInstance {
 
     pub fn get(&self, name: &Token) -> Result<LiteralValue, RuntimeError> {
         if let Some(v) = self.fields.get(&name.lexeme) {
-            Ok(v.clone())
-        } else {
-            Err(RuntimeError::UndefinedProperty())
+            return Ok(v.clone())
         }
+
+        let method = self.lox_class.find_method(&name.lexeme);
+        if method != LiteralValue::Nil {
+            return Ok(method)
+        }
+            
+            
+        Err(RuntimeError::UndefinedProperty())
+        
     }
 
     pub fn set(&mut self, name: Token, value: LiteralValue) {
@@ -39,7 +46,7 @@ impl LoxInstance {
 
 impl Display for LoxInstance {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "LoxInstance with class: {}", self.lox_class.borrow().name)
+        write!(f, "LoxInstance with class: {}", self.lox_class.name)
     }
 }
 

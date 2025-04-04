@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::{fmt, rc::Rc, sync::atomic::Ordering};
 
 use crate::core::lox_class::LoxClass;
+use crate::core::lox_function::LoxFunction;
 use crate::core::lox_instance::LoxInstance;
 use crate::core::{error_types::runtime_error::RuntimeError, lox_callable::LoxCallable, syntax::token::Token};
 use std::sync::atomic::AtomicUsize;
@@ -80,6 +81,7 @@ pub enum LiteralValue {
     String(String),
     Boolean(bool),
     Callable(Rc<dyn LoxCallable>),
+    LoxFunction(Rc<LoxFunction>),
     LoxInstance(Rc<RefCell<LoxInstance>>),
     LoxClass(LoxClass),
     Nil,
@@ -106,6 +108,8 @@ impl LiteralValue {
     pub fn return_fn_if_callable(&self) -> Option<Rc<dyn LoxCallable>> {
         match self {
             LiteralValue::Callable(fun) => Some(fun.clone()),
+            LiteralValue::LoxFunction(fun) => Some(fun.clone()),
+            LiteralValue::LoxClass(fun) => Some(Rc::new(fun.clone())),
             _ => None, 
         }
     }
@@ -128,6 +132,9 @@ impl Hash for LiteralValue {
             }
             LiteralValue::LoxClass(_) => {
                 panic!("No se puede hacer hash de un Class");
+            }
+            LiteralValue::LoxFunction(_) => {
+                panic!("No se puede hacer hash de un Function");
             }
         }
     }
@@ -205,10 +212,14 @@ impl fmt::Display for LiteralValue {
             }
             LiteralValue::Nil => write!(f, "nil"),
             LiteralValue::LoxInstance(i) => {
-                write!(f, "Instance of {}", i.borrow().lox_class.borrow().name)
+                write!(f, "Instance of {}", i.borrow().lox_class.name)
             }
             LiteralValue::LoxClass(c) => {
                 write!(f, "Class {}", c.name)
+            }
+            LiteralValue::LoxFunction(ff) => {
+                write!(f, "Fucntion {:?}", ff)
+
             }
         }
     }
@@ -271,10 +282,11 @@ impl fmt::Debug for LiteralValue {
             LiteralValue::Number(n) => write!(f, "Number({})", n),
             LiteralValue::String(s) => write!(f, "String({:?})", s),
             LiteralValue::Boolean(b) => write!(f, "Boolean({})", b),
-            LiteralValue::Callable(_) => write!(f, "Callable(<function>)"),
+            LiteralValue::Callable(_) => write!(f, "Callable()"),
+            LiteralValue::LoxFunction(_) => write!(f, "Callable(<function>)"),
             LiteralValue::Nil => write!(f, "Nil"),
             LiteralValue::LoxInstance(i) => {
-                write!(f, "LoxInstance {}", i.borrow().lox_class.borrow().name)
+                write!(f, "LoxInstance {}", i.borrow().lox_class.name)
             }
             LiteralValue::LoxClass(c) => {
                 write!(f, "LoxClass {}", c.name)
