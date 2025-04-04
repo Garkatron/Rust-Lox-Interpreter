@@ -30,7 +30,18 @@ impl LoxInstance {
 
         let method = self.lox_class.find_method(&name.lexeme);
         if method != LiteralValue::Nil {
-            return Ok(method)
+            match method {
+                LiteralValue::LoxFunction(f) => {
+                    return Ok(
+                        LiteralValue::LoxFunction(
+                            f.bind(Rc::new(self)).into()
+                        )
+                    )
+                }
+                _ => {
+                    todo!()
+                }
+            }
         }
             
             
@@ -41,7 +52,8 @@ impl LoxInstance {
     pub fn set(&mut self, name: Token, value: LiteralValue) {
         self.fields.insert(name.lexeme, value);
     }
-    
+
+
 }
 
 impl Display for LoxInstance {

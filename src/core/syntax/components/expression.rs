@@ -47,6 +47,10 @@ pub enum Expr {
         id: usize,
         value: LiteralValue,
     },
+    This {
+        id: usize,
+        keyword: Token
+    },
     Unary {
         id: usize,
         operator: Token,
@@ -157,6 +161,7 @@ pub trait Visitor<R> {
     fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
     fn visit_get(&mut self, name: &Token, object: &Expr) -> Result<R, RuntimeError>;
     fn visit_set(&mut self, object: &Expr, name: &Token, value: &Expr) -> Result<R, RuntimeError>;
+    fn visit_this(&mut self, keyword: &Token) -> Result<R, RuntimeError>;
 }
 
 impl Expr {
@@ -192,6 +197,9 @@ impl Expr {
             Expr::Set { object, name, value } => {
                 visitor.visit_set(object, name, value)
             }
+            Expr::This { keyword, .. } => {
+                visitor.visit_this(keyword)
+            }
         }
     }
 
@@ -219,7 +227,6 @@ impl fmt::Display for LiteralValue {
             }
             LiteralValue::LoxFunction(ff) => {
                 write!(f, "Fucntion {:?}", ff)
-
             }
         }
     }
@@ -271,6 +278,9 @@ impl fmt::Display for Expr {
             }
             Expr::Set { object, name, value } => {
                 write!(f, "{}, {}, {:?}", value, name, object)
+            }
+            Expr::This { keyword } => {
+                write!(f,"This {}", keyword)
             }
         }
     }

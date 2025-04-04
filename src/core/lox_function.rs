@@ -2,11 +2,7 @@ use core::fmt;
 use std::{cell::RefCell, fmt::{Display, Formatter}, rc::Rc};
 
 use super::{
-    environment::Environment, 
-    error_types::runtime_error::RuntimeError, 
-    interpreter::Interpreter, 
-    lox_callable::LoxCallable, 
-    syntax::components::{expression::LiteralValue, stmt::Stmt}
+    environment::Environment, error_types::runtime_error::RuntimeError, interpreter::Interpreter, lox_callable::LoxCallable, lox_instance::LoxInstance, syntax::components::{expression::LiteralValue, stmt::Stmt}
 };
 #[derive(Clone, Debug)]
 
@@ -18,6 +14,11 @@ pub struct LoxFunction {
 impl LoxFunction {
     pub fn new(declaration: Stmt, closure: Rc<RefCell<Environment>>) -> Self {
         Self { declaration, closure }
+    }
+    pub fn bind(&self, instance: Rc<RefCell<LoxInstance>>) -> LoxFunction {
+        let env = Rc::new(RefCell::new(Environment::new(Some(Rc::clone(&self.closure)))));
+        env.borrow_mut().define("this", LiteralValue::LoxInstance(instance));
+        LoxFunction::new(self.declaration.clone(), env)
     }
 }
 

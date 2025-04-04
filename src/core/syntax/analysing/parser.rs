@@ -657,6 +657,12 @@ impl Parser {
                 value: self.previous().literal.clone(),
             });
         }
+        if self.match_tokens(&[THIS]) {
+            return Ok(Expr::This { 
+                id: Expr::new_id(),
+                keyword: self.previous()
+            });
+        }
         if self.match_tokens(&[IDENTIFIER]) {
             return Ok(Expr::Variable {
                 id: Expr::new_id(),

@@ -101,6 +101,10 @@ impl ExpressionVisitor<()> for Resolver {
         self.resolve_expr(object)?;
         Ok(())
     }
+    fn visit_this(&mut self, keyword: &Token) -> Result<(), RuntimeError> {
+        self.resolve_local(&Expr::Literal { id: 0, value: LiteralValue::Nil },keyword);
+        Ok(())
+    }
 }
 
 impl StatementVisitor<()> for Resolver {
@@ -183,14 +187,21 @@ impl StatementVisitor<()> for Resolver {
         self.declare(name);
         self.define(name);
 
+        self.begin_scope();
+        if let Some(scope) = self.scopes.last_mut() {
+            scope.insert("this".to_string(), true);
+        }
+
         for method in methods {
             let declaration = FunctionType::METHOD;
             self.resolve_function(method.clone(), declaration)?;
         }
 
+        self.end_scope();
+
         Ok(())
     }
-
+    
 }
 
 impl Resolver {

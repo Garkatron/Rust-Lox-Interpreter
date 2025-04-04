@@ -1,7 +1,9 @@
-class Bacon {
-  eat() {
-    print "Crunch crunch crunch!";
+class Egotist {
+  speak() {
+    print this;
   }
 }
 
-Bacon().eat(); // Prints "Crunch crunch crunch!".
+
+var method = Egotist().speak;
+method();

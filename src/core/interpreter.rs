@@ -225,6 +225,9 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
             }
         }
     }
+    fn visit_this(&mut self, keyword: &Token) -> Result<LiteralValue, RuntimeError> {
+        self.look_up_variable(keyword, &Expr::Literal { id: 0, value: LiteralValue::Nil })
+    }
 }
 impl StatementVisitor<()> for Interpreter {
     fn visit_expression(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
