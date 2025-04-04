@@ -6,13 +6,14 @@ use rustc_hash::FxHashMap;
 
 use super::error_types::runtime_error::RuntimeError;
 use super::lox_class::LoxClass;
-use super::syntax::components::expression::LiteralValue;
+use super::syntax::components::expression::LoxValue;
 use super::syntax::token::Token;
 use std::fmt::Display;
 use std::fmt::Formatter;
+#[derive(Clone)]
 pub struct LoxInstance {
     pub lox_class: LoxClass,
-    fields: FxHashMap<String, LiteralValue>
+    fields: FxHashMap<String, LoxValue>
 }
 
 impl LoxInstance {
@@ -22,19 +23,18 @@ impl LoxInstance {
             fields: FxHashMap::default()
         }
     }
-
-    pub fn get(&self, name: &Token) -> Result<LiteralValue, RuntimeError> {
+    pub fn get(&self, name: &Token) -> Result<LoxValue, RuntimeError> {
         if let Some(v) = self.fields.get(&name.lexeme) {
-            return Ok(v.clone())
+            return Ok(v.clone());
         }
-
+    
         let method = self.lox_class.find_method(&name.lexeme);
-        if method != LiteralValue::Nil {
+        if method != LoxValue::Nil {
             match method {
-                LiteralValue::LoxFunction(f) => {
+                LoxValue::LoxFunction(f) => {
                     return Ok(
-                        LiteralValue::LoxFunction(
-                            f.bind(Rc::new(self)).into()
+                        LoxValue::LoxFunction(
+                            f.bind(Rc::new(RefCell::new(self.clone())))?.into()
                         )
                     )
                 }
@@ -43,13 +43,13 @@ impl LoxInstance {
                 }
             }
         }
-            
-            
+    
         Err(RuntimeError::UndefinedProperty())
-        
     }
+    
+    
 
-    pub fn set(&mut self, name: Token, value: LiteralValue) {
+    pub fn set(&mut self, name: Token, value: LoxValue) {
         self.fields.insert(name.lexeme, value);
     }
 

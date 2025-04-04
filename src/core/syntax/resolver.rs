@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use rustc_hash::FxHashMap;
 
-use super::components::expression::{Expr, LiteralValue, Visitor as ExpressionVisitor};
+use super::components::expression::{Expr, LoxValue, Visitor as ExpressionVisitor};
 use super::components::stmt::{Stmt, Visitor as StatementVisitor};
 use super::token::Token;
 use crate::core::error_types::runtime_error::RuntimeError;
@@ -16,7 +16,8 @@ use crate::utils::colors::Color;
 pub enum FunctionType {
     NONE,
     METHOD,
-    FUNCTION
+    FUNCTION,
+    INITIALIZER
 }
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ClassType {
@@ -71,7 +72,7 @@ impl ExpressionVisitor<()> for Resolver {
         self.resolve_expr(expression)?;
         Ok(())
     }
-    fn visit_literal(&mut self, _value: &LiteralValue) -> Result<(), RuntimeError> {
+    fn visit_literal(&mut self, _value: &LoxValue) -> Result<(), RuntimeError> {
         Ok(())
     }
     fn visit_logical(&mut self, left: &Expr, _operator: &Token, right: &Expr) -> Result<(), RuntimeError> {
@@ -112,7 +113,7 @@ impl ExpressionVisitor<()> for Resolver {
             Lox::print_error("Can't use 'this' outside a class.");
             return Ok(())
         }
-        self.resolve_local(&Expr::Literal { id: 0, value: LiteralValue::Nil },keyword);
+        self.resolve_local(&Expr::Literal { id: 0, value: LoxValue::Nil },keyword);
         Ok(())
     }
 }
@@ -129,7 +130,7 @@ impl StatementVisitor<()> for Resolver {
         
         match initializer {
             Expr::Literal { value, .. } => {
-                if *value != LiteralValue::Nil {
+                if *value != LoxValue::Nil {
                     self.resolve_expr(initializer)?;
                 }
             }
@@ -169,9 +170,13 @@ impl StatementVisitor<()> for Resolver {
     fn visit_return(&mut self, _keyword: &Token, value: &Expr) -> Result<(), RuntimeError> {
         if self.current_function == FunctionType::NONE {
             // Lox::print_error("Can't return from top-level code.");
-
-            return Err(RuntimeError::Return(LiteralValue::Nil));
+            return Err(RuntimeError::Return(LoxValue::Nil));
         }
+
+        if self.current_function == FunctionType::INITIALIZER {
+            return Err(RuntimeError::CantReturnFromInitializer());
+        }
+
         
         // ! NEED CHECK IF RETURN HAS A VALUE, MAKE THE VALUE OPTIONAL 
 
@@ -195,7 +200,7 @@ impl StatementVisitor<()> for Resolver {
     }
     fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<(), RuntimeError> {
         
-        let enclosing_class = self.current_class;
+        let _enclosing_class = self.current_class;
         self.current_class = ClassType::CLASS;
 
         self.declare(name);
@@ -207,7 +212,19 @@ impl StatementVisitor<()> for Resolver {
         }
 
         for method in methods {
-            let declaration = FunctionType::METHOD;
+            let mut declaration = FunctionType::METHOD;
+            
+            match method {
+                Stmt::Function { token, params:_, body:_ } => {
+                    if token.lexeme == "init" {
+                        declaration = FunctionType::INITIALIZER;
+                    }
+                }
+                _ => {
+
+                }
+            }
+
             self.resolve_function(method.clone(), declaration)?;
         }
 

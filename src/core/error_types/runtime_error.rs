@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::core::syntax::{components::expression::LiteralValue, token::Token};
+use crate::core::syntax::{components::expression::LoxValue, token::Token};
 
 #[derive(Debug, Clone)]
 pub enum RuntimeError {
@@ -13,11 +13,12 @@ pub enum RuntimeError {
     BadCallable(),
     ToManyArguments(Token, usize, usize),
     NativeFunctionError(String),
-    Return(LiteralValue),
+    Return(LoxValue),
     BadArguments(String),
     InvalidFunction(String),
     OnlyInstancesHaveProperties(),
-    UndefinedProperty()
+    UndefinedProperty(),
+    CantReturnFromInitializer()
 }
 
 impl fmt::Display for RuntimeError {
@@ -53,6 +54,9 @@ impl fmt::Display for RuntimeError {
             }
             RuntimeError::Return(_) => {
                 write!(f, "[RUNTIME]: return out of a function.")
+            }
+            RuntimeError::CantReturnFromInitializer() => {
+                write!(f, "[RUNTIME]: Can't return a value from an initializer.")
             }
             RuntimeError::BadArguments(m) => {
                 write!(f,"[RUNTIME]: Bad arguments {}", m)

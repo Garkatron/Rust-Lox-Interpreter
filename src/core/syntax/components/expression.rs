@@ -45,7 +45,7 @@ pub enum Expr {
     },
     Literal {
         id: usize,
-        value: LiteralValue,
+        value: LoxValue,
     },
     This {
         id: usize,
@@ -80,7 +80,7 @@ pub enum Expr {
 }
 
 #[derive(Clone)]
-pub enum LiteralValue {
+pub enum LoxValue {
     Number(f64),
     String(String),
     Boolean(bool),
@@ -91,53 +91,53 @@ pub enum LiteralValue {
     Nil,
 }
 
-impl PartialEq for LiteralValue {
+impl PartialEq for LoxValue {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (LiteralValue::Boolean(b1), LiteralValue::Boolean(b2)) => b1 == b2,
-            (LiteralValue::Number(n1), LiteralValue::Number(n2)) => n1 == n2,
-            (LiteralValue::String(s1), LiteralValue::String(s2)) => s1 == s2,
-            (LiteralValue::Nil, LiteralValue::Nil) => true,
+            (LoxValue::Boolean(b1), LoxValue::Boolean(b2)) => b1 == b2,
+            (LoxValue::Number(n1), LoxValue::Number(n2)) => n1 == n2,
+            (LoxValue::String(s1), LoxValue::String(s2)) => s1 == s2,
+            (LoxValue::Nil, LoxValue::Nil) => true,
             _ => false,
         }
     }
 }
 
-impl Eq for LiteralValue {}
+impl Eq for LoxValue {}
 
-impl LiteralValue {
+impl LoxValue {
     pub fn is_callable(&self) -> bool {
-        matches!(self, LiteralValue::Callable(_))
+        matches!(self, LoxValue::Callable(_))
     }
     pub fn return_fn_if_callable(&self) -> Option<Rc<dyn LoxCallable>> {
         match self {
-            LiteralValue::Callable(fun) => Some(fun.clone()),
-            LiteralValue::LoxFunction(fun) => Some(fun.clone()),
-            LiteralValue::LoxClass(fun) => Some(Rc::new(fun.clone())),
+            LoxValue::Callable(fun) => Some(fun.clone()),
+            LoxValue::LoxFunction(fun) => Some(fun.clone()),
+            LoxValue::LoxClass(fun) => Some(Rc::new(fun.clone())),
             _ => None, 
         }
     }
 }
 
-impl Hash for LiteralValue {
+impl Hash for LoxValue {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
-            LiteralValue::Boolean(b) => b.hash(state),
-            LiteralValue::Number(n) => {
+            LoxValue::Boolean(b) => b.hash(state),
+            LoxValue::Number(n) => {
                 n.to_bits().hash(state);
             }
-            LiteralValue::String(s) => s.hash(state),
-            LiteralValue::Nil => state.write_u8(0), 
-            LiteralValue::Callable(_) => {
+            LoxValue::String(s) => s.hash(state),
+            LoxValue::Nil => state.write_u8(0), 
+            LoxValue::Callable(_) => {
                 panic!("No se puede hacer hash de un Callable");
             }
-            LiteralValue::LoxInstance(_) => {
+            LoxValue::LoxInstance(_) => {
                 panic!("No se puede hacer hash de un Instance");
             }
-            LiteralValue::LoxClass(_) => {
+            LoxValue::LoxClass(_) => {
                 panic!("No se puede hacer hash de un Class");
             }
-            LiteralValue::LoxFunction(_) => {
+            LoxValue::LoxFunction(_) => {
                 panic!("No se puede hacer hash de un Function");
             }
         }
@@ -147,7 +147,7 @@ pub trait Visitor<R> {
     fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
     fn visit_call(&mut self, callee: &Expr, paren: &Token, arguments: &[Expr]) -> Result<R, RuntimeError>;
     fn visit_grouping(&mut self, expression: &Expr) -> Result<R, RuntimeError>;
-    fn visit_literal(&mut self, value: &LiteralValue) -> Result<R, RuntimeError>;
+    fn visit_literal(&mut self, value: &LoxValue) -> Result<R, RuntimeError>;
     fn visit_comma(&mut self, left: &Expr, right: &Expr) -> Result<R, RuntimeError>;
     fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Result<R, RuntimeError>;
     fn visit_ternary(
@@ -209,23 +209,23 @@ impl Expr {
 }   
 
 
-impl fmt::Display for LiteralValue {
+impl fmt::Display for LoxValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            LiteralValue::Number(n) => write!(f, "{}", n),
-            LiteralValue::String(s) => write!(f, "\"{}\"", s),
-            LiteralValue::Boolean(b) => write!(f, "{}", b),
-            LiteralValue::Callable(_d) => {
+            LoxValue::Number(n) => write!(f, "{}", n),
+            LoxValue::String(s) => write!(f, "\"{}\"", s),
+            LoxValue::Boolean(b) => write!(f, "{}", b),
+            LoxValue::Callable(_d) => {
                 write!(f, "{:?}", "Function")
             }
-            LiteralValue::Nil => write!(f, "nil"),
-            LiteralValue::LoxInstance(i) => {
+            LoxValue::Nil => write!(f, "nil"),
+            LoxValue::LoxInstance(i) => {
                 write!(f, "Instance of {}", i.borrow().lox_class.name)
             }
-            LiteralValue::LoxClass(c) => {
+            LoxValue::LoxClass(c) => {
                 write!(f, "Class {}", c.name)
             }
-            LiteralValue::LoxFunction(ff) => {
+            LoxValue::LoxFunction(ff) => {
                 write!(f, "Fucntion {:?}", ff)
             }
         }
@@ -279,26 +279,26 @@ impl fmt::Display for Expr {
             Expr::Set { object, name, value } => {
                 write!(f, "{}, {}, {:?}", value, name, object)
             }
-            Expr::This { keyword } => {
+            Expr::This { keyword , ..} => {
                 write!(f,"This {}", keyword)
             }
         }
     }
 }
 
-impl fmt::Debug for LiteralValue {
+impl fmt::Debug for LoxValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LiteralValue::Number(n) => write!(f, "Number({})", n),
-            LiteralValue::String(s) => write!(f, "String({:?})", s),
-            LiteralValue::Boolean(b) => write!(f, "Boolean({})", b),
-            LiteralValue::Callable(_) => write!(f, "Callable()"),
-            LiteralValue::LoxFunction(_) => write!(f, "Callable(<function>)"),
-            LiteralValue::Nil => write!(f, "Nil"),
-            LiteralValue::LoxInstance(i) => {
+            LoxValue::Number(n) => write!(f, "Number({})", n),
+            LoxValue::String(s) => write!(f, "String({:?})", s),
+            LoxValue::Boolean(b) => write!(f, "Boolean({})", b),
+            LoxValue::Callable(_) => write!(f, "Callable()"),
+            LoxValue::LoxFunction(_) => write!(f, "Callable(<function>)"),
+            LoxValue::Nil => write!(f, "Nil"),
+            LoxValue::LoxInstance(i) => {
                 write!(f, "LoxInstance {}", i.borrow().lox_class.name)
             }
-            LiteralValue::LoxClass(c) => {
+            LoxValue::LoxClass(c) => {
                 write!(f, "LoxClass {}", c.name)
             }
         }

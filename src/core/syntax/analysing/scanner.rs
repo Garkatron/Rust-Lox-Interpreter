@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::core::syntax::components::expression::LiteralValue;
+use crate::core::syntax::components::expression::LoxValue;
 use crate::core::syntax::token::Token;
 use crate::utils::colors::Color;
 
@@ -59,7 +59,7 @@ impl Scanner {
         self.tokens.push(Token::from(
             EOF,
             "".to_string(),
-            LiteralValue::Nil,
+            LoxValue::Nil,
             self.line,
         ));
 
@@ -203,7 +203,7 @@ impl Scanner {
         }
         self.add_token_lit(
             NUMBER,
-            LiteralValue::Number(self.source[self.start..self.current].parse().expect("[SCANNER]: FloatError")),
+            LoxValue::Number(self.source[self.start..self.current].parse().expect("[SCANNER]: FloatError")),
         )
     }
 
@@ -227,7 +227,7 @@ impl Scanner {
 
         // Trim the surrounding quotes.
         let value: String = self.source[self.start + 1..self.current - 1].to_string();
-        self.add_token_lit(STRING, LiteralValue::String(value))
+        self.add_token_lit(STRING, LoxValue::String(value))
     }
 
     fn char_match(&mut self, expected: char) -> bool {
@@ -291,10 +291,10 @@ impl Scanner {
     fn add_token(&mut self, t_type: TokenType) {
         let lexeme = self.source[self.start..self.current].to_string();
         self.tokens
-            .push(Token::from(t_type, lexeme, LiteralValue::Nil, self.line));
+            .push(Token::from(t_type, lexeme, LoxValue::Nil, self.line));
     }
 
-    fn add_token_lit(&mut self, t_type: TokenType, literal: LiteralValue) {
+    fn add_token_lit(&mut self, t_type: TokenType, literal: LoxValue) {
         let lexeme = self.source[self.start..self.current].to_string();
         self.tokens
             .push(Token::from(t_type, lexeme, literal, self.line));
