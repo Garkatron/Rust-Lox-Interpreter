@@ -127,18 +127,12 @@ impl StatementVisitor<()> for Resolver {
     }
     fn visit_var(&mut self, name: &Token, initializer: &Expr) -> Result<(), RuntimeError> {
         self.declare(name);
-        
-        if let Expr::Literal { value , ..} = initializer {
-            if *value != LoxValue::Nil {
-                self.resolve_expr(initializer)?;
-            }
-        }
-    
+        self.resolve_expr(initializer)?; 
         self.define(name);
         self.unused_variables.push(name.lexeme.clone());
-    
         Ok(())
     }
+    
     
     fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt]) -> Result<(), RuntimeError> {
         self.declare(token);

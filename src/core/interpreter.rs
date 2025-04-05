@@ -130,7 +130,7 @@ impl ExpressionVisitor<LoxValue> for Interpreter {
         }
     }
 
-    fn visit_variable(&mut self, name: &Token, e: &Expr) -> Result<LoxValue, RuntimeError> {        
+    fn visit_variable(&mut self, name: &Token, e: &Expr) -> Result<LoxValue, RuntimeError> {
         Ok(self.look_up_variable(name, e)?)
         // Ok(self.environment.borrow().get(name)?)
     }
@@ -170,7 +170,7 @@ impl ExpressionVisitor<LoxValue> for Interpreter {
         Ok(self.evaluate(right)?)
     }
 
-    fn visit_call(&mut self, callee: &Expr, paren: &Token, arguments: &[Expr]) -> Result<LoxValue, RuntimeError> {
+    fn visit_call(&mut self, callee: &Expr, paren: &Token, arguments: &[Expr]) -> Result<LoxValue, RuntimeError> {        
         let callee_val = self.evaluate(callee)?;
         let mut args = vec![];
         for arg in arguments {

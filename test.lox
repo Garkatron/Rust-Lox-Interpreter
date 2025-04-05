@@ -1,10 +1,5 @@
-var a = 2;
-var b = "2";
-
-
 class Foo {
 
-  var test = "aaa";
 
   init() {
     print("INIT");
@@ -15,4 +10,12 @@ class Foo {
 
 }
 
+var a = 2;
+var b = "2";
+
+
+
+
 var c = Foo();
+print(c);
+c.tata();
