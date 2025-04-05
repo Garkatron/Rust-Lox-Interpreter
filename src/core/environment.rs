@@ -29,19 +29,18 @@ impl Environment {
     }
 
     pub fn get(&self, name: &Token) -> Result<LoxValue, RuntimeError> {
-        if let Some(value) = self.values.get(&name.lexeme) {
-            return Ok(value.clone());
+        match self.values.get(&name.lexeme) {
+            Some(value) => Ok(value.clone()),
+            None => match &self.enclosing {
+                Some(enclosing) => enclosing.borrow().get(name),
+                None => Err(RuntimeError::UndefinedVariable(name.clone())),
+            },
         }
-        if let Some(enclosing) = &self.enclosing {
-            return enclosing.borrow().get(name);
-        }
-        Err(RuntimeError::UndefinedVariable(name.clone()))
     }
     
     pub fn assign(&mut self, name: &Token, value: LoxValue) -> Result<(), RuntimeError> {
         if self.values.contains_key(&name.lexeme) {
             self.values.insert(name.lexeme.clone(), value);
-            
             return Ok(());
         }
         if let Some(enclosing) = &self.enclosing {
@@ -60,17 +59,7 @@ impl Environment {
         }
         env
     }
-    /*
-    let mut env = self.enclosing.as_ref().map(Rc::clone);
-        for _ in 0..distance {
-            env = match &env {
-                Some(e) => e.borrow_mut().enclosing.take(),
-                None => return None,
-            };
-        }
-        env
-    */
-
+    
     pub fn get_at(&self, distance: usize, name: &str) -> Result<LoxValue, RuntimeError> {
         match self.ancestor(distance) {
             Some(env) => env.borrow().values.get(name).cloned().ok_or_else(|| {

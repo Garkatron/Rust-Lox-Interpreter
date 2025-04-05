@@ -1,9 +1,9 @@
 use core::fmt;
 use std::{cell::RefCell, fmt::{Display, Formatter}, rc::Rc};
 
-use super::{
-    environment::Environment, error_types::runtime_error::RuntimeError, interpreter::Interpreter, lox_callable::LoxCallable, lox_instance::LoxInstance, syntax::components::{expression::LoxValue, stmt::Stmt}
-};
+use crate::core::{environment::Environment, error_types::runtime_error::RuntimeError, interpreter::Interpreter, oop::lox_instance::LoxInstance, syntax::components::{expression::LoxValue, stmt::Stmt}};
+
+use super::lox_callable::LoxCallable;
 #[derive(Clone, Debug)]
 
 pub struct LoxFunction {

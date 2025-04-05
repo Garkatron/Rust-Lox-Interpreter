@@ -6,10 +6,11 @@ use rustc_hash::FxHashMap;
 
 use super::environment::Environment;
 use super::error_types::runtime_error::RuntimeError;
-use super::lox_class::LoxClass;
-use super::lox_function::LoxFunction;
+
+use super::fuctions::lox_function::LoxFunction;
 use super::native_functions::lox_clock::LoxClock;
 use super::native_functions::lox_print::LoxPrint;
+use super::oop::lox_class::LoxClass;
 use super::syntax::components::expression::{Expr, LoxValue, Visitor as ExpressionVisitor};
 use super::syntax::components::stmt::{Stmt, Visitor as StatementVisitor};
 use super::syntax::token::Token;
@@ -131,7 +132,6 @@ impl ExpressionVisitor<LoxValue> for Interpreter {
 
     fn visit_variable(&mut self, name: &Token, e: &Expr) -> Result<LoxValue, RuntimeError> {        
         Ok(self.look_up_variable(name, e)?)
-
         // Ok(self.environment.borrow().get(name)?)
     }
 
@@ -146,6 +146,7 @@ impl ExpressionVisitor<LoxValue> for Interpreter {
                 self.globals.assign(name, value.clone())?;
             }
         }
+
         // self.environment.borrow_mut().assign(name, value.clone())?;
         Ok(value)
     }
@@ -193,15 +194,11 @@ impl ExpressionVisitor<LoxValue> for Interpreter {
 
     fn visit_get(&mut self, name: &Token, object: &Expr) -> Result<LoxValue, RuntimeError> {
         let obj = self.evaluate(object)?;
-        match obj {
-            LoxValue::LoxInstance(i) => {
-                return Ok(i.borrow_mut().get(name)?)
-            }
-            _=> {
-
-            }
+        
+        if let LoxValue::LoxInstance(i) = obj {
+            return Ok(i.borrow_mut().get(name)?)
         }
-
+        
         Err(RuntimeError::OnlyInstancesHaveProperties())
     }
 
@@ -348,20 +345,14 @@ impl StatementVisitor<()> for Interpreter {
 
         let mut met = FxHashMap::default();
         for method in methods  {
-            match method {
-                Stmt::Function { token, params: _, body: _ } => {
-                    let function = LoxFunction::new(method.clone(), Rc::clone(&self.environment), name.lexeme == "init");
-                    met.insert(token.lexeme.clone(), function);
-                }
-                _ => {
-                    
-                }
+            if let Stmt::Function { token, .. } = method {
+                let function = LoxFunction::new(method.clone(), Rc::clone(&self.environment), token.lexeme == "init");
+                met.insert(token.lexeme.clone(), function);
             }
         }
-
+        
         let loxclass = LoxClass::new(name.lexeme.clone(), met);
         self.environment.borrow_mut().assign(name, LoxValue::LoxClass(loxclass))?;
-
         Ok(())
     }
 }
@@ -371,14 +362,6 @@ impl Interpreter {
 
         let _ = global_env.define("clock", LoxValue::Callable(Rc::new(LoxClock::new())));
         let _ = global_env.define("print", LoxValue::Callable(Rc::new(LoxPrint::new())));
-
-        
-        /*
-        global_env.define(
-            "println",
-            LiteralValue::Callable(Box::new(LoxPrintLn::new())),
-        );
-        */
 
         Self {
             globals: global_env.clone(),
@@ -453,7 +436,6 @@ impl Interpreter {
     }
 
     pub fn look_up_variable(&mut self, name: &Token, expr: &Expr) -> Result<LoxValue, RuntimeError> {
-    
         if let Some(opt) = self.locals.get(expr) {
             return Ok(self.environment.borrow().get_at(*opt, &name.lexeme)?);
         } else {

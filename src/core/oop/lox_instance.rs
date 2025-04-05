@@ -3,11 +3,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use rustc_hash::FxHashMap;
+use crate::core::error_types::runtime_error::RuntimeError;
+use crate::core::syntax::components::expression::LoxValue;
+use crate::core::syntax::token::Token;
 
-use super::error_types::runtime_error::RuntimeError;
 use super::lox_class::LoxClass;
-use super::syntax::components::expression::LoxValue;
-use super::syntax::token::Token;
 use std::fmt::Display;
 use std::fmt::Formatter;
 #[derive(Clone)]
@@ -47,7 +47,6 @@ impl LoxInstance {
         Err(RuntimeError::UndefinedProperty())
     }
     
-    
 
     pub fn set(&mut self, name: Token, value: LoxValue) {
         self.fields.insert(name.lexeme, value);
@@ -58,7 +57,7 @@ impl LoxInstance {
 
 impl Display for LoxInstance {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "LoxInstance with class: {}", self.lox_class.name)
+        write!(f, "LoxInstance({})", self.lox_class.name)
     }
 }
 

@@ -50,6 +50,7 @@ impl Parser {
 
     fn class_declaration(&mut self) -> Result<Stmt, ParseError> {
         let name = self.consume(IDENTIFIER, ParseError::ExpectClassName(self.peek().line))?;
+        
         self.consume(LEFT_BRACE, ParseError::ExpectedLeftBraceAfterClassBody(self.peek().line))?;
        
         let mut methods = vec![];

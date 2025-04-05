@@ -1,9 +1,10 @@
 use core::fmt;
 use std::{cell::RefCell, fmt::{Display, Formatter}, rc::Rc};
 use rustc_hash::FxHashMap;
-use crate::core::{error_types::runtime_error::RuntimeError, interpreter::Interpreter, lox_callable::LoxCallable, syntax::components::expression::LoxValue};
+use crate::core::{error_types::runtime_error::RuntimeError, fuctions::{lox_callable::LoxCallable, lox_function::LoxFunction}, interpreter::Interpreter, syntax::components::expression::LoxValue};
+
+use super::lox_instance::LoxInstance;
 // use std::collections::HashMap;
-use super::{lox_function::LoxFunction, lox_instance::LoxInstance};
 #[derive(Clone)]
 pub struct LoxClass {
     pub name: String,
@@ -40,6 +41,6 @@ impl LoxCallable for LoxClass {
 
 impl Display for LoxClass {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "LoxInstance with class: {}", self.name)
+        write!(f, "LoxClass({})", self.name)
     }
 }

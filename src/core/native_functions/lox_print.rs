@@ -1,5 +1,5 @@
 use crate::core::{
-    error_types::runtime_error::RuntimeError, interpreter::Interpreter, lox_callable::LoxCallable, syntax::components::expression::LoxValue
+    error_types::runtime_error::RuntimeError, fuctions::lox_callable::LoxCallable, interpreter::Interpreter, syntax::components::expression::LoxValue
 };
 
 pub struct LoxPrint;

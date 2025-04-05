@@ -1,11 +1,18 @@
+var a = 2;
+var b = "2";
+
+
 class Foo {
+
+  var test = "aaa";
+
   init() {
-    print("adasda");
+    print("INIT");
+  }
+  tata() {
+    print("TATA");
   }
 
-  test() {
-    print("test");
-  }
 }
-var foo = Foo();
-foo.test();
+
+var c = Foo();

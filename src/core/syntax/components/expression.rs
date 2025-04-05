@@ -1,10 +1,11 @@
 use std::cell::RefCell;
 use std::{fmt, rc::Rc, sync::atomic::Ordering};
 
-use crate::core::lox_class::LoxClass;
-use crate::core::lox_function::LoxFunction;
-use crate::core::lox_instance::LoxInstance;
-use crate::core::{error_types::runtime_error::RuntimeError, lox_callable::LoxCallable, syntax::token::Token};
+use crate::core::fuctions::lox_callable::LoxCallable;
+use crate::core::fuctions::lox_function::LoxFunction;
+use crate::core::oop::lox_class::LoxClass;
+use crate::core::oop::lox_instance::LoxInstance;
+use crate::core::{error_types::runtime_error::RuntimeError, syntax::token::Token};
 use std::sync::atomic::AtomicUsize;
 static NEXT_ID: AtomicUsize = AtomicUsize::new(1);
 use std::hash::Hasher;
@@ -212,21 +213,21 @@ impl Expr {
 impl fmt::Display for LoxValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            LoxValue::Number(n) => write!(f, "{}", n),
-            LoxValue::String(s) => write!(f, "\"{}\"", s),
-            LoxValue::Boolean(b) => write!(f, "{}", b),
+            LoxValue::Number(n) => write!(f, "Number({})", n),
+            LoxValue::String(s) => write!(f, "String({})", s),
+            LoxValue::Boolean(b) => write!(f, "Boolean({})", b),
             LoxValue::Callable(_d) => {
-                write!(f, "{:?}", "Function")
+                write!(f, "Callable()")
             }
             LoxValue::Nil => write!(f, "nil"),
             LoxValue::LoxInstance(i) => {
-                write!(f, "Instance of {}", i.borrow().lox_class.name)
+                write!(f, "Instance({})", i.borrow().lox_class.name)
             }
             LoxValue::LoxClass(c) => {
-                write!(f, "Class {}", c.name)
+                write!(f, "Class({})", c.name)
             }
             LoxValue::LoxFunction(ff) => {
-                write!(f, "Fucntion {:?}", ff)
+                write!(f, "Function({})" , ff)
             }
         }
     }
@@ -296,10 +297,10 @@ impl fmt::Debug for LoxValue {
             LoxValue::LoxFunction(_) => write!(f, "Callable(<function>)"),
             LoxValue::Nil => write!(f, "Nil"),
             LoxValue::LoxInstance(i) => {
-                write!(f, "LoxInstance {}", i.borrow().lox_class.name)
+                write!(f, "LoxInstance({})", i.borrow().lox_class.name)
             }
             LoxValue::LoxClass(c) => {
-                write!(f, "LoxClass {}", c.name)
+                write!(f, "LoxClass({})", c.name)
             }
         }
     }

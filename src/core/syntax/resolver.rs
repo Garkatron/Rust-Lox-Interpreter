@@ -128,14 +128,9 @@ impl StatementVisitor<()> for Resolver {
     fn visit_var(&mut self, name: &Token, initializer: &Expr) -> Result<(), RuntimeError> {
         self.declare(name);
         
-        match initializer {
-            Expr::Literal { value, .. } => {
-                if *value != LoxValue::Nil {
-                    self.resolve_expr(initializer)?;
-                }
-            }
-            _ => {
-               
+        if let Expr::Literal { value , ..} = initializer {
+            if *value != LoxValue::Nil {
+                self.resolve_expr(initializer)?;
             }
         }
     
@@ -148,7 +143,7 @@ impl StatementVisitor<()> for Resolver {
     fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt]) -> Result<(), RuntimeError> {
         self.declare(token);
         self.define(token);
-        self.resolve_function(Stmt::Function { token: token.clone(), params: params.to_vec(), body: body.to_vec() }, FunctionType::FUNCTION)?;
+        self.resolve_function(&Stmt::Function { token: token.clone(), params: params.to_vec(), body: body.to_vec() }, FunctionType::FUNCTION)?;
         Ok(())
     }
     fn visit_expression(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
@@ -200,7 +195,7 @@ impl StatementVisitor<()> for Resolver {
     }
     fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<(), RuntimeError> {
         
-        let _enclosing_class = self.current_class;
+        let enclosing_class = self.current_class;
         self.current_class = ClassType::CLASS;
 
         self.declare(name);
@@ -214,21 +209,16 @@ impl StatementVisitor<()> for Resolver {
         for method in methods {
             let mut declaration = FunctionType::METHOD;
             
-            match method {
-                Stmt::Function { token, params:_, body:_ } => {
-                    if token.lexeme == "init" {
-                        declaration = FunctionType::INITIALIZER;
-                    }
-                }
-                _ => {
-
+            if let Stmt::Function { token, .. } = method {
+                if token.lexeme == "init" {
+                    declaration = FunctionType::INITIALIZER;
                 }
             }
-
-            self.resolve_function(method.clone(), declaration)?;
+            
+            self.resolve_function(method, declaration)?;
         }
-
         self.end_scope();
+        self.current_class = enclosing_class;
 
         Ok(())
     }
@@ -275,7 +265,7 @@ impl Resolver {
         expr.accept(self)?;
         Ok(())
     }
-    fn resolve_function(&mut self, function: Stmt, ftype: FunctionType) -> Result<(), RuntimeError> {
+    fn resolve_function(&mut self, function: &Stmt, ftype: FunctionType) -> Result<(), RuntimeError> {
         if let Stmt::Function { params, body , ..} = function {
             let enclosing_function = self.current_function;
             self.current_function = ftype;
