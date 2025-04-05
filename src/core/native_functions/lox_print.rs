@@ -51,11 +51,7 @@ impl LoxCallable for LoxPrintLn {
         arguments: Vec<LoxValue>,
     ) -> Result<LoxValue, RuntimeError> {
         arguments.iter().for_each(|f| {
-            if let LoxValue::String(s) = f {
-                println!("{}", s);
-            } else {
-                println!("{}", f);
-            }
+            println!("{}", f);
         });
         
 

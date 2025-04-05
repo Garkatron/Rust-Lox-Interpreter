@@ -23,24 +23,19 @@ impl LoxInstance {
             fields: FxHashMap::default()
         }
     }
-    pub fn get(&self, name: &Token) -> Result<LoxValue, RuntimeError> {
+    pub fn get(&self, r: Rc<RefCell<Self>>, name: &Token) -> Result<LoxValue, RuntimeError> {
         if let Some(v) = self.fields.get(&name.lexeme) {
             return Ok(v.clone());
         }
     
         let method = self.lox_class.find_method(&name.lexeme);
         if method != LoxValue::Nil {
-            match method {
-                LoxValue::LoxFunction(f) => {
-                    return Ok(
-                        LoxValue::LoxFunction(
-                            f.bind(Rc::new(RefCell::new(self.clone())))?.into()
-                        )
+            if let LoxValue::LoxFunction(f) = method {
+                return Ok(
+                    LoxValue::LoxFunction(
+                        f.bind(Rc::clone(&r))?.into()
                     )
-                }
-                _ => {
-                    todo!()
-                }
+                )
             }
         }
     

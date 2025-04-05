@@ -1,21 +1,17 @@
-class Foo {
-
-
+class Perro {
   init() {
-    print("INIT");
+    println(this);
   }
-  tata() {
-    print("TATA");
+  test() {
+    println(this);
+    return "a";
   }
 
 }
 
-var a = 2;
-var b = "2";
+fun test() {
+  
+}
 
-
-
-
-var c = Foo();
-print(c);
-c.tata();
+var p = Perro().test;
+p();

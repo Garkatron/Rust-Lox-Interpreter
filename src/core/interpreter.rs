@@ -9,7 +9,7 @@ use super::error_types::runtime_error::RuntimeError;
 
 use super::fuctions::lox_function::LoxFunction;
 use super::native_functions::lox_clock::LoxClock;
-use super::native_functions::lox_print::LoxPrint;
+use super::native_functions::lox_print::{LoxPrint, LoxPrintLn};
 use super::oop::lox_class::LoxClass;
 use super::syntax::components::expression::{Expr, LoxValue, Visitor as ExpressionVisitor};
 use super::syntax::components::stmt::{Stmt, Visitor as StatementVisitor};
@@ -192,29 +192,30 @@ impl ExpressionVisitor<LoxValue> for Interpreter {
         }
     }
 
+
     fn visit_get(&mut self, name: &Token, object: &Expr) -> Result<LoxValue, RuntimeError> {
         let obj = self.evaluate(object)?;
         
         if let LoxValue::LoxInstance(i) = obj {
-            return Ok(i.borrow_mut().get(name)?)
+            return Ok(i.borrow().get(Rc::clone(&i), name)?)
         }
         
         Err(RuntimeError::OnlyInstancesHaveProperties())
     }
 
+
     fn visit_set(&mut self, object: &Expr, name: &Token, value: &Expr) -> Result<LoxValue, RuntimeError> {
         let obj = self.evaluate(object)?;
 
-        match obj {
-            LoxValue::LoxInstance(i) => {
-                let value = self.evaluate(value)?;
-                i.borrow_mut().set(name.clone(), value.clone());
-                Ok(value)
-            }
-            _ => {
-                Err(RuntimeError::OnlyInstancesHaveProperties())
-            }
+        if let LoxValue::LoxInstance(i) = obj {
+            let value = self.evaluate(value)?;
+            i.borrow_mut().set(name.clone(), value.clone());
+            return Ok(value);
         }
+
+        Err(RuntimeError::OnlyInstancesHaveProperties())
+            
+        
     }
     fn visit_this(&mut self, keyword: &Token) -> Result<LoxValue, RuntimeError> {
         self.look_up_variable(keyword, &Expr::Literal { id: 0, value: LoxValue::Nil })
@@ -227,8 +228,7 @@ impl StatementVisitor<()> for Interpreter {
     }
 
     fn visit_print(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
-        let value = self.evaluate(expression)?;
-        println!("{}", self.stringify(&value));
+        let _value = self.evaluate(expression)?;
         Ok(())
     }
 
@@ -362,6 +362,7 @@ impl Interpreter {
 
         let _ = global_env.define("clock", LoxValue::Callable(Rc::new(LoxClock::new())));
         let _ = global_env.define("print", LoxValue::Callable(Rc::new(LoxPrint::new())));
+        let _ = global_env.define("println", LoxValue::Callable(Rc::new(LoxPrintLn::new())));
 
         Self {
             globals: global_env.clone(),

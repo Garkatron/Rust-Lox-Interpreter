@@ -226,8 +226,14 @@ impl Scanner {
         self.advance();
 
         // Trim the surrounding quotes.
-        let value: String = self.source[self.start + 1..self.current - 1].to_string();
-        self.add_token_lit(STRING, LoxValue::String(value))
+        let value = match self.source.get(self.start + 1..self.current - 1) {
+            Some(v) => v.to_string(),
+            None => {
+                self.error("[SCANNER][ERROR]: Invalid UTF-8 range in string.");
+                return;
+            }
+        };
+                self.add_token_lit(STRING, LoxValue::String(value))
     }
 
     fn char_match(&mut self, expected: char) -> bool {

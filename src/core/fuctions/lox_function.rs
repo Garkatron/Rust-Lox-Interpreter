@@ -17,10 +17,11 @@ impl LoxFunction {
         Self { declaration, closure, is_initializer}
     }
     pub fn bind(&self, instance: Rc<RefCell<LoxInstance>>) -> Result<LoxFunction, RuntimeError> {
-        let env = Rc::new(RefCell::new(Environment::new(Some(Rc::clone(&self.closure)))));
+        let env = Rc::new(RefCell::new(Environment::new(Some(Rc::clone(&self.closure))))); 
         env.borrow_mut().define("this", LoxValue::LoxInstance(instance))?;
         Ok(LoxFunction::new(self.declaration.clone(), env, self.is_initializer))
     }
+    
 }
 
 impl LoxCallable for LoxFunction {
@@ -82,6 +83,11 @@ impl LoxCallable for LoxFunction {
 
 impl Display for LoxFunction {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "LoxFunction()")
+        if let Stmt::Function { token, .. } = &self.declaration {
+            write!(f, "Function({})", token.lexeme)
+        } else {
+            write!(f, "Function(anonymous)")
+        }
     }
 }
+
