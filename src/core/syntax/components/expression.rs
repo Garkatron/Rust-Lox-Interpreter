@@ -210,29 +210,6 @@ impl Expr {
 }   
 
 
-impl fmt::Display for LoxValue {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            LoxValue::Number(n) => write!(f, "Number({})", n),
-            LoxValue::String(s) => write!(f, "String({})", s),
-            LoxValue::Boolean(b) => write!(f, "Boolean({})", b),
-            LoxValue::Callable(_d) => {
-                write!(f, "Callable()")
-            }
-            LoxValue::Nil => write!(f, "nil"),
-            LoxValue::LoxInstance(i) => {
-                write!(f, "Instance({})", i.borrow().lox_class.name)
-            }
-            LoxValue::LoxClass(c) => {
-                write!(f, "Class({})", c.name)
-            }
-            LoxValue::LoxFunction(ff) => {
-                write!(f, "Function({})" , ff)
-            }
-        }
-    }
-}
-
 impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -306,3 +283,25 @@ impl fmt::Debug for LoxValue {
     }
 }
 
+impl fmt::Display for LoxValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            LoxValue::Number(n) => write!(f, "Number({})", n),
+            LoxValue::String(s) => write!(f, "String({})", s),
+            LoxValue::Boolean(b) => write!(f, "Boolean({})", b),
+            LoxValue::Callable(_d) => {
+                write!(f, "Callable()")
+            }
+            LoxValue::Nil => write!(f, "nil"),
+            LoxValue::LoxInstance(i) => {
+                write!(f, "Instance({})", i.borrow().lox_class.name)
+            }
+            LoxValue::LoxClass(c) => {
+                write!(f, "Class({})", c.name)
+            }
+            LoxValue::LoxFunction(ff) => {
+                write!(f, "Function({})" , ff)
+            }
+        }
+    }
+}

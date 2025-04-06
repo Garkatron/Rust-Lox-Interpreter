@@ -15,20 +15,20 @@ pub enum Stmt {
     While { condition: Expr, body: Box<Stmt>, else_branch: Option<Box<Stmt>> },
     Loop { body: Box<Stmt> },
     Break {},
-    Function { token: Token, params: Vec<Token>, body: Vec<Stmt>},
+    Function { token: Token, params: Vec<Token>, body: Vec<Stmt>, public: bool, is_static: bool},
     Return { keyword: Token, value: Expr }
 }
 
 pub trait Visitor<R> {
     fn visit_expression(&mut self, expression: &Expr) -> Result<R, RuntimeError>;
     fn visit_print(&mut self, expression: &Expr) -> Result<R, RuntimeError>;
-    fn visit_var(&mut self, name: &Token, initializer: &Expr) -> Result<R, RuntimeError>;
+    fn visit_var_declaration(&mut self, name: &Token, initializer: &Expr) -> Result<R, RuntimeError>;
     fn visit_block(&mut self, statements: &[Stmt]) -> Result<R, RuntimeError>;
     fn visit_if(&mut self, condition: &Expr, then_branch: &Stmt, else_branch: Option<&Stmt>) -> Result<R, RuntimeError>;
     fn visit_while(&mut self, condition: &Expr, body: &Stmt, else_branch: Option<&Stmt>) -> Result<R, RuntimeError>;
     fn visit_loop(&mut self, body: &Stmt) -> Result<R, RuntimeError>;
     fn visit_break(&mut self) -> Result<R, RuntimeError>;
-    fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt]) -> Result<R, RuntimeError>;
+    fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt], public: bool, is_static: bool) -> Result<R, RuntimeError>;
     fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<R, RuntimeError>;
     fn visit_return(&mut self, keyword: &Token, value: &Expr) -> Result<R, RuntimeError>;
 }
@@ -38,7 +38,7 @@ impl Stmt {
         match self {
             Stmt::Expression { expression } => visitor.visit_expression(expression),
             Stmt::Print { expression } => visitor.visit_print(expression),
-            Stmt::Var { name, initializer } => visitor.visit_var(name, initializer),
+            Stmt::Var { name, initializer } => visitor.visit_var_declaration(name, initializer),
             Stmt::Block { statements } => visitor.visit_block(statements),
             Stmt::If { condition, then_branch, else_branch } => visitor.visit_if(condition, then_branch, else_branch.as_deref()),
             Stmt::While { condition, body, else_branch } => {
@@ -50,8 +50,8 @@ impl Stmt {
             Stmt::Break { .. } => {
                 visitor.visit_break()
             }
-            Stmt::Function { token, params, body } => {
-                visitor.visit_function(token, params, body)
+            Stmt::Function { token, params, body, public, is_static } => {
+                visitor.visit_function(token, params, body, *public, *is_static)
             }
             Stmt::Return { keyword, value } => {
                 visitor.visit_return(keyword, value)

@@ -23,20 +23,35 @@ impl LoxInstance {
             fields: FxHashMap::default()
         }
     }
-    pub fn get(&self, r: Rc<RefCell<Self>>, name: &Token) -> Result<LoxValue, RuntimeError> {
+    pub fn get(&self, r: Rc<RefCell<Self>>, name: &Token, is_this: bool) -> Result<LoxValue, RuntimeError> {
         if let Some(v) = self.fields.get(&name.lexeme) {
             return Ok(v.clone());
         }
     
         let method = self.lox_class.find_method(&name.lexeme);
+        let s_method = self.lox_class.find_static(&name.lexeme)?;
+
         if method != LoxValue::Nil {
             if let LoxValue::LoxFunction(f) = method {
-                return Ok(
-                    LoxValue::LoxFunction(
-                        f.bind(Rc::clone(&r))?.into()
+                if f.is_public() {
+                    return Ok(
+                        LoxValue::LoxFunction(
+                            f.bind(Rc::clone(&r))?.into()
+                        )
                     )
-                )
+                } else if is_this {
+                    return Ok(
+                        LoxValue::LoxFunction(
+                            f.bind(Rc::clone(&r))?.into()
+                        )
+                    )
+                } else {
+                    return Err(RuntimeError::CantAccessPrivateMethod());     
+                }
             }
+            return Err(RuntimeError::UndefinedProperty());               
+        } else if s_method != LoxValue::Nil {
+            return Err(RuntimeError::CantCallStaticMethodFromInstance())
         }
     
         Err(RuntimeError::UndefinedProperty())

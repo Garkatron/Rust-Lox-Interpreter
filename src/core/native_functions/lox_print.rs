@@ -1,6 +1,6 @@
-use crate::core::{
+use crate::{core::{
     error_types::runtime_error::RuntimeError, fuctions::lox_callable::LoxCallable, interpreter::Interpreter, syntax::components::expression::LoxValue
-};
+}, debug_dbg};
 
 pub struct LoxPrint;
 
@@ -52,6 +52,33 @@ impl LoxCallable for LoxPrintLn {
     ) -> Result<LoxValue, RuntimeError> {
         arguments.iter().for_each(|f| {
             println!("{}", f);
+        });
+        
+
+        Ok(LoxValue::Nil)
+    }
+}
+
+pub struct LoxDbg;
+
+impl LoxDbg {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl LoxCallable for LoxDbg {
+    fn arity(&self) -> usize {
+        1
+    }
+
+    fn call(
+        &self,
+        _interpreter: &mut Interpreter,
+        arguments: Vec<LoxValue>,
+    ) -> Result<LoxValue, RuntimeError> {
+        arguments.iter().for_each(|f| {
+            debug_dbg!(f);
         });
         
 

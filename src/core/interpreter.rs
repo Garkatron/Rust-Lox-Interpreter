@@ -4,12 +4,15 @@ use std::usize;
 
 use rustc_hash::FxHashMap;
 
+use crate::core::syntax::token;
+use crate::{debug_dbg, debug_log};
+
 use super::environment::Environment;
 use super::error_types::runtime_error::RuntimeError;
 
 use super::fuctions::lox_function::LoxFunction;
 use super::native_functions::lox_clock::LoxClock;
-use super::native_functions::lox_print::{LoxPrint, LoxPrintLn};
+use super::native_functions::lox_print::{LoxDbg, LoxPrint, LoxPrintLn};
 use super::oop::lox_class::LoxClass;
 use super::syntax::components::expression::{Expr, LoxValue, Visitor as ExpressionVisitor};
 use super::syntax::components::stmt::{Stmt, Visitor as StatementVisitor};
@@ -192,14 +195,22 @@ impl ExpressionVisitor<LoxValue> for Interpreter {
         }
     }
 
-
     fn visit_get(&mut self, name: &Token, object: &Expr) -> Result<LoxValue, RuntimeError> {
+        
+        let is_this = if let Expr::This { .. } = object {
+            true
+        } else {
+            false
+        };
+
+
         let obj = self.evaluate(object)?;
-        
         if let LoxValue::LoxInstance(i) = obj {
-            return Ok(i.borrow().get(Rc::clone(&i), name)?)
+            return Ok(i.borrow().get(Rc::clone(&i), name, is_this)?)
         }
-        
+        if let LoxValue::LoxClass(i) = obj {
+            return Ok(i.find_static(&name.lexeme)?)
+        }
         Err(RuntimeError::OnlyInstancesHaveProperties())
     }
 
@@ -228,11 +239,12 @@ impl StatementVisitor<()> for Interpreter {
     }
 
     fn visit_print(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
-        let _value = self.evaluate(expression)?;
+        let value = self.evaluate(expression)?;
+        println!("{}", value);
         Ok(())
     }
 
-    fn visit_var(&mut self, name: &Token, initializer: &Expr) -> Result<(), RuntimeError> {
+    fn visit_var_declaration(&mut self, name: &Token, initializer: &Expr) -> Result<(), RuntimeError> {
         let value = self.evaluate(initializer)?;
         self.environment.borrow_mut().define(&name.lexeme, value)?;
         Ok(())
@@ -320,15 +332,19 @@ impl StatementVisitor<()> for Interpreter {
         Err(RuntimeError::Break())
     }
 
-    fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt]) -> Result<(), RuntimeError> {
+    fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt], public: bool, is_static: bool) -> Result<(), RuntimeError> {
         let function = LoxFunction::new(
             Stmt::Function {
                 token: token.clone(),
                 params: params.to_vec(),
                 body: body.to_vec(),
+                public,
+                is_static
             },
             Rc::clone(&self.environment),
-            false
+            false,
+            true,
+            is_static
         );
 
         self.environment.borrow_mut().define(&token.lexeme, LoxValue::Callable(Rc::new(function)))?;
@@ -345,8 +361,8 @@ impl StatementVisitor<()> for Interpreter {
 
         let mut met = FxHashMap::default();
         for method in methods  {
-            if let Stmt::Function { token, .. } = method {
-                let function = LoxFunction::new(method.clone(), Rc::clone(&self.environment), token.lexeme == "init");
+            if let Stmt::Function { token, public, is_static, .. } = method {
+                let function = LoxFunction::new(method.clone(), Rc::clone(&self.environment), token.lexeme == "init", *public, *is_static);
                 met.insert(token.lexeme.clone(), function);
             }
         }
@@ -363,6 +379,9 @@ impl Interpreter {
         let _ = global_env.define("clock", LoxValue::Callable(Rc::new(LoxClock::new())));
         let _ = global_env.define("print", LoxValue::Callable(Rc::new(LoxPrint::new())));
         let _ = global_env.define("println", LoxValue::Callable(Rc::new(LoxPrintLn::new())));
+        let _ = global_env.define("dbg", LoxValue::Callable(Rc::new(LoxDbg::new())));
+        //let _ = global_env.define("true", LoxValue::Boolean(true));
+        //let _ = global_env.define("false", LoxValue::Boolean(false));
 
         Self {
             globals: global_env.clone(),

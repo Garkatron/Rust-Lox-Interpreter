@@ -38,7 +38,7 @@ impl Parser {
         if self.match_tokens(&[CLASS]) {
             return self.class_declaration();
         }
-        if self.match_tokens(&[FUN]) {
+        if self.match_tokens(&[FN]) {
             return self.function("function");
         }
         if self.match_tokens(&[VAR]) {
@@ -91,6 +91,19 @@ impl Parser {
     }
 
     fn function(&mut self, kind: &str) -> Result<Stmt, ParseError> {
+
+        let public = if kind == "method" {
+            self.match_tokens(&[PUB])
+        } else {
+            true
+        };
+
+        let is_static =  if kind == "method" {
+            self.match_tokens(&[STATIC])
+        } else {
+            true
+        };
+        
         let name = self.consume(
             IDENTIFIER,
             ParseError::ExpectedIdentifier(self.peek().line, kind.to_string()),
@@ -146,6 +159,8 @@ impl Parser {
             token: name,
             params,
             body,
+            public,
+            is_static
         });
     }
 
@@ -738,7 +753,7 @@ impl Parser {
         self.advance();
         while !self.is_at_end() {
             match self.peek().t_type {
-                CLASS | FUN | VAR | FOR | IF | WHILE | PRINT | RETURN => return,
+                CLASS | FN | VAR | FOR | IF | WHILE | PRINT | RETURN => return,
                 _ => self.advance(),
             };
         }

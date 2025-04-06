@@ -125,7 +125,7 @@ impl StatementVisitor<()> for Resolver {
         self.end_scope();
         Ok(())
     }
-    fn visit_var(&mut self, name: &Token, initializer: &Expr) -> Result<(), RuntimeError> {
+    fn visit_var_declaration(&mut self, name: &Token, initializer: &Expr) -> Result<(), RuntimeError> {
         self.declare(name);
         self.resolve_expr(initializer)?; 
         self.define(name);
@@ -133,11 +133,10 @@ impl StatementVisitor<()> for Resolver {
         Ok(())
     }
     
-    
-    fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt]) -> Result<(), RuntimeError> {
+    fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt], public: bool, is_static: bool) -> Result<(), RuntimeError> {
         self.declare(token);
         self.define(token);
-        self.resolve_function(&Stmt::Function { token: token.clone(), params: params.to_vec(), body: body.to_vec() }, FunctionType::FUNCTION)?;
+        self.resolve_function(&Stmt::Function { token: token.clone(), params: params.to_vec(), body: body.to_vec(), public, is_static }, FunctionType::FUNCTION)?;
         Ok(())
     }
     fn visit_expression(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
@@ -196,18 +195,21 @@ impl StatementVisitor<()> for Resolver {
         self.define(name);
 
         self.begin_scope();
-        if let Some(scope) = self.scopes.last_mut() {
-            scope.insert("this".to_string(), true);
+        if let Some(current_scope) = self.scopes.last_mut() {
+            current_scope.insert("this".to_string(), true);
         }
 
         for method in methods {
-            let mut declaration = FunctionType::METHOD;
-            
-            if let Stmt::Function { token, .. } = method {
+            let declaration = if let Stmt::Function { token, .. } = method {
                 if token.lexeme == "init" {
-                    declaration = FunctionType::INITIALIZER;
+                    FunctionType::INITIALIZER
+                } else {
+                    FunctionType::METHOD
                 }
-            }
+            } else {
+                todo!();
+            };
+    
             
             self.resolve_function(method, declaration)?;
         }
@@ -260,13 +262,13 @@ impl Resolver {
         Ok(())
     }
     fn resolve_function(&mut self, function: &Stmt, ftype: FunctionType) -> Result<(), RuntimeError> {
-        if let Stmt::Function { params, body , ..} = function {
+        if let Stmt::Function { params, body, ..} = function {
             let enclosing_function = self.current_function;
             self.current_function = ftype;
             self.begin_scope();
             for param in params {
                 self.declare(&param);
-                self.define(&param);
+                self.define(&param);  
             }
             self.resolve_statements(&body)?;
             self.end_scope();
