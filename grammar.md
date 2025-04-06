@@ -1,9 +1,12 @@
 ```
 program        → declaration* EOF ;
 
-declaration    → funDecl
+declaration    → classDecl 
+               | funDecl
                | varDecl
                | statement ;
+
+classDecl      → "class" IDENTIFIER "{" function* "}" ;
 
 statement      → exprStmt
                | forStmt
@@ -44,7 +47,7 @@ printStmt      → "print" expression ";" ;
 varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 
 expression     → assignment ;
-assignment     → IDENTIFIER "=" assignment
+assignment     → ( call "." )? IDENTIFIER "=" assignment
                | ternary ;
                | logic_or ;
 
@@ -61,7 +64,7 @@ unary          → ( "!" | "-" ) unary
                | call
                | primary ;
 
-call           → primary ( "(" arguments? ")" )* ;
+call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 arguments      → expression ( "," expression )* ;
 
 primary        → "true" | "false" | "nil"

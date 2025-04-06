@@ -1,6 +1,5 @@
 use crate::core::{
-    error_types::runtime_error::RuntimeError, interpreter::Interpreter,
-    lox_callable::LoxCallable, syntax::components::expression::LiteralValue,
+    error_types::runtime_error::RuntimeError, fuctions::lox_callable::LoxCallable, interpreter::Interpreter, syntax::components::expression::LoxValue
 };
 use std::time::SystemTime;
 
@@ -19,13 +18,13 @@ impl LoxCallable for LoxClock {
     fn call(
         &self,
         _interpreter: &mut Interpreter,
-        _arguments: Vec<LiteralValue>,
-    ) -> Result<LiteralValue, RuntimeError> {
+        _arguments: Vec<LoxValue>,
+    ) -> Result<LoxValue, RuntimeError> {
         let now = SystemTime::now();
         let duration = now
             .duration_since(SystemTime::UNIX_EPOCH)
             .expect("Time went backwards");
-        Ok(LiteralValue::Number(
+        Ok(LoxValue::Number(
             duration.as_secs() as f64 + duration.subsec_nanos() as f64 / 1_000_000_000.0,
         ))
     }

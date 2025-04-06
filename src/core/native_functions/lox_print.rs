@@ -1,6 +1,6 @@
-use crate::core::{
-    error_types::runtime_error::RuntimeError, interpreter::Interpreter, lox_callable::LoxCallable, syntax::components::expression::LiteralValue
-};
+use crate::{core::{
+    error_types::runtime_error::RuntimeError, fuctions::lox_callable::LoxCallable, interpreter::Interpreter, syntax::components::expression::LoxValue
+}, debug_dbg};
 
 pub struct LoxPrint;
 
@@ -18,8 +18,8 @@ impl LoxCallable for LoxPrint {
     fn call(
         &self,
         _interpreter: &mut Interpreter,
-        arguments: Vec<LiteralValue>,
-    ) -> Result<LiteralValue, RuntimeError> {
+        arguments: Vec<LoxValue>,
+    ) -> Result<LoxValue, RuntimeError> {
         if arguments.is_empty() {
             return Err(RuntimeError::NativeFunctionError(
                 "LoxPrint requires 1 argument".to_string(),
@@ -28,7 +28,7 @@ impl LoxCallable for LoxPrint {
 
         arguments.iter().for_each(|f| print!("{}", f));
 
-        Ok(LiteralValue::Nil)
+        Ok(LoxValue::Nil)
     }
 }
 
@@ -48,17 +48,40 @@ impl LoxCallable for LoxPrintLn {
     fn call(
         &self,
         _interpreter: &mut Interpreter,
-        arguments: Vec<LiteralValue>,
-    ) -> Result<LiteralValue, RuntimeError> {
+        arguments: Vec<LoxValue>,
+    ) -> Result<LoxValue, RuntimeError> {
         arguments.iter().for_each(|f| {
-            if let LiteralValue::String(s) = f {
-                println!("{}", s);
-            } else {
-                println!("{}", f);
-            }
+            println!("{}", f);
         });
         
 
-        Ok(LiteralValue::Nil)
+        Ok(LoxValue::Nil)
+    }
+}
+
+pub struct LoxDbg;
+
+impl LoxDbg {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl LoxCallable for LoxDbg {
+    fn arity(&self) -> usize {
+        1
+    }
+
+    fn call(
+        &self,
+        _interpreter: &mut Interpreter,
+        arguments: Vec<LoxValue>,
+    ) -> Result<LoxValue, RuntimeError> {
+        arguments.iter().for_each(|f| {
+            debug_dbg!(f);
+        });
+        
+
+        Ok(LoxValue::Nil)
     }
 }

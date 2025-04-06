@@ -1,5 +1,5 @@
 
-use crate::{core::{error_types::parse_error::ParseError, syntax::{components::{expression::{Expr, LiteralValue}, stmt::Stmt}, token::Token, token_type::TokenType}}, utils::colors::Color};
+use crate::{core::{error_types::parse_error::ParseError, syntax::{components::{expression::{Expr, LoxValue}, stmt::Stmt}, token::Token, token_type::TokenType}}, utils::colors::Color};
 
 use crate::core::syntax::token_type::TokenType::*;
 
@@ -35,7 +35,10 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> Result<Stmt, ParseError> {
-        if self.match_tokens(&[FUN]) {
+        if self.match_tokens(&[CLASS]) {
+            return self.class_declaration();
+        }
+        if self.match_tokens(&[FN]) {
             return self.function("function");
         }
         if self.match_tokens(&[VAR]) {
@@ -44,6 +47,23 @@ impl Parser {
 
         self.statement()
     }
+
+    fn class_declaration(&mut self) -> Result<Stmt, ParseError> {
+        let name = self.consume(IDENTIFIER, ParseError::ExpectClassName(self.peek().line))?;
+        
+        self.consume(LEFT_BRACE, ParseError::ExpectedLeftBraceAfterClassBody(self.peek().line))?;
+       
+        let mut methods = vec![];
+
+        while !self.check(RIGHT_BRACE) && !self.is_at_end() {
+            methods.push(self.function("method")?);
+        }
+        
+        self.consume(RIGHT_BRACE, ParseError::ExpectedRightBraceAfterClassBody(self.peek().line))?;
+
+        Ok(Stmt::Class { name, methods })
+    }
+
     fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
         let name = self.consume(
             IDENTIFIER,
@@ -52,7 +72,7 @@ impl Parser {
 
         let mut initializer = Expr::Literal {
             id: Expr::new_id(),
-            value: LiteralValue::Nil,
+            value: LoxValue::Nil,
         }; // ! ALL VARS NOT INITIALIZED ARE NULL
 
         if self.match_tokens(&[EQUAL]) {
@@ -71,6 +91,19 @@ impl Parser {
     }
 
     fn function(&mut self, kind: &str) -> Result<Stmt, ParseError> {
+
+        let public = if kind == "method" {
+            self.match_tokens(&[PUB])
+        } else {
+            true
+        };
+
+        let is_static =  if kind == "method" {
+            self.match_tokens(&[STATIC])
+        } else {
+            true
+        };
+        
         let name = self.consume(
             IDENTIFIER,
             ParseError::ExpectedIdentifier(self.peek().line, kind.to_string()),
@@ -126,6 +159,8 @@ impl Parser {
             token: name,
             params,
             body,
+            public,
+            is_static
         });
     }
 
@@ -163,7 +198,7 @@ impl Parser {
 
     fn return_statement(&mut self) -> Result<Stmt, ParseError> {
         let keyword = self.previous();
-        let mut value = Expr::Literal { id: Expr::new_id(), value: LiteralValue::Nil };
+        let mut value = Expr::Literal { id: Expr::new_id(), value: LoxValue::Nil };
         if !self.check(SEMICOLON) {
             value = self.expression()?;
         }
@@ -187,7 +222,7 @@ impl Parser {
             initializer = Some(Stmt::Expression {
                 expression: Expr::Literal {
                     id: Expr::new_id(),
-                    value: LiteralValue::Nil,
+                    value: LoxValue::Nil,
                 },
             });
         } else if self.match_tokens(&[VAR]) {
@@ -221,7 +256,7 @@ impl Parser {
             // Incremento vacío
             increment = Some(Expr::Literal {
                 id: Expr::new_id(),
-                value: LiteralValue::Nil,
+                value: LoxValue::Nil,
             });
         }
 
@@ -245,7 +280,7 @@ impl Parser {
         body = Stmt::While {
             condition: condition.unwrap_or(Expr::Literal {
                 id: Expr::new_id(),
-                value: LiteralValue::Boolean(true),
+                value: LoxValue::Boolean(true),
             }),
             body: Box::new(body),
             else_branch: None,
@@ -391,6 +426,9 @@ impl Parser {
                         name,
                         value: Box::new(value),
                     })
+                }
+                Expr::Get { object, name } => {
+                    return Ok(Expr::Set { object, name, value: Box::new(value) })
                 }
                 _ => Color::ecprintln(
                     &ParseError::InvalidAssignmentTarget(self.current).to_string(),
@@ -567,6 +605,9 @@ impl Parser {
         loop {
             if self.match_tokens(&[LEFT_PAREN]) {
                 expr = self.finish_call(expr)?;
+            } else if self.match_tokens(&[DOT]) {
+                let name = self.consume(IDENTIFIER, ParseError::ExpectedPropertyNameAfterDot(self.peek().line))?;
+                expr = Expr::Get { object: Box::new(expr), name: name }
             } else {
                 break;
             }
@@ -611,19 +652,19 @@ impl Parser {
         if self.match_tokens(&[FALSE]) {
             return Ok(Expr::Literal {
                 id: Expr::new_id(),
-                value: LiteralValue::Boolean(false),
+                value: LoxValue::Boolean(false),
             });
         }
         if self.match_tokens(&[TRUE]) {
             return Ok(Expr::Literal {
                 id: Expr::new_id(),
-                value: LiteralValue::Boolean(true),
+                value: LoxValue::Boolean(true),
             });
         }
         if self.match_tokens(&[NIL]) {
             return Ok(Expr::Literal {
                 id: Expr::new_id(),
-                value: LiteralValue::Nil,
+                value: LoxValue::Nil,
             });
         }
         if self.match_tokens(&[NUMBER, STRING]) {
@@ -632,11 +673,17 @@ impl Parser {
                 value: self.previous().literal.clone(),
             });
         }
+        if self.match_tokens(&[THIS]) {
+            return Ok(Expr::This { 
+                id: Expr::new_id(),
+                keyword: self.previous()
+            });
+        }
         if self.match_tokens(&[IDENTIFIER]) {
             return Ok(Expr::Variable {
                 id: Expr::new_id(),
                 name: self.previous(),
-                value: Box::new(Expr::Literal { id: Expr::new_id(), value: LiteralValue::Nil }) 
+                value: Box::new(Expr::Literal { id: Expr::new_id(), value: LoxValue::Nil }) 
             });
         }
         if self.match_tokens(&[LEFT_PAREN]) {
@@ -706,7 +753,7 @@ impl Parser {
         self.advance();
         while !self.is_at_end() {
             match self.peek().t_type {
-                CLASS | FUN | VAR | FOR | IF | WHILE | PRINT | RETURN => return,
+                CLASS | FN | VAR | FOR | IF | WHILE | PRINT | RETURN => return,
                 _ => self.advance(),
             };
         }

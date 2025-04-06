@@ -4,13 +4,17 @@ use std::usize;
 
 use rustc_hash::FxHashMap;
 
+use crate::core::syntax::token;
+use crate::{debug_dbg, debug_log};
+
 use super::environment::Environment;
 use super::error_types::runtime_error::RuntimeError;
-use super::lox::Lox;
-use super::lox_function::LoxFunction;
+
+use super::fuctions::lox_function::LoxFunction;
 use super::native_functions::lox_clock::LoxClock;
-use super::native_functions::lox_print::LoxPrint;
-use super::syntax::components::expression::{Expr, LiteralValue, Visitor as ExpressionVisitor};
+use super::native_functions::lox_print::{LoxDbg, LoxPrint, LoxPrintLn};
+use super::oop::lox_class::LoxClass;
+use super::syntax::components::expression::{Expr, LoxValue, Visitor as ExpressionVisitor};
 use super::syntax::components::stmt::{Stmt, Visitor as StatementVisitor};
 use super::syntax::token::Token;
 use super::syntax::token_type::TokenType;
@@ -21,18 +25,18 @@ pub struct Interpreter {
     pub locals: FxHashMap<Expr, usize>,
 }
 
-impl ExpressionVisitor<LiteralValue> for Interpreter {
-    fn visit_unary(&mut self, operator: &Token, right: &Expr,) -> Result<LiteralValue, RuntimeError> {
+impl ExpressionVisitor<LoxValue> for Interpreter {
+    fn visit_unary(&mut self, operator: &Token, right: &Expr,) -> Result<LoxValue, RuntimeError> {
         let lit = self.evaluate(right)?;
         match operator.t_type {
             TokenType::MINUS => match lit {
-                LiteralValue::Number(n) => Ok(LiteralValue::Number(-n)),
+                LoxValue::Number(n) => Ok(LoxValue::Number(-n)),
                 _ => Err(RuntimeError::BadOperator(
                     operator.clone(),
                     "Operand must be a number.".to_string(),
                 )),
             },
-            TokenType::BANG => Ok(LiteralValue::Boolean(!self.is_truthy(&lit))),
+            TokenType::BANG => Ok(LoxValue::Boolean(!self.is_truthy(&lit))),
             _ => Err(RuntimeError::BadOperator(
                 operator.clone(),
                 "Invalid unary operator.".to_string(),
@@ -45,55 +49,55 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         left: &Expr,
         operator: &Token,
         right: &Expr,
-    ) -> Result<LiteralValue, RuntimeError> {
+    ) -> Result<LoxValue, RuntimeError> {
         let left_lit = self.evaluate(left)?;
         let right_lit = self.evaluate(right)?;
 
         match (operator.t_type.clone(), &left_lit, &right_lit) {
-            (TokenType::PLUS, LiteralValue::Number(n1), LiteralValue::Number(n2)) => {
-                Ok(LiteralValue::Number(n1 + n2))
+            (TokenType::PLUS, LoxValue::Number(n1), LoxValue::Number(n2)) => {
+                Ok(LoxValue::Number(n1 + n2))
             }
-            (TokenType::PLUS, LiteralValue::String(s1), LiteralValue::String(s2)) => {
-                Ok(LiteralValue::String(format!("{}{}", s1, s2)))
+            (TokenType::PLUS, LoxValue::String(s1), LoxValue::String(s2)) => {
+                Ok(LoxValue::String(format!("{}{}", s1, s2)))
             }
-            (TokenType::PLUS, LiteralValue::String(s1), LiteralValue::Number(n)) => {
-                Ok(LiteralValue::String(format!("{}{}", s1, n)))
+            (TokenType::PLUS, LoxValue::String(s1), LoxValue::Number(n)) => {
+                Ok(LoxValue::String(format!("{}{}", s1, n)))
             }
-            (TokenType::MINUS, LiteralValue::Number(n1), LiteralValue::Number(n2)) => {
-                Ok(LiteralValue::Number(n1 - n2))
+            (TokenType::MINUS, LoxValue::Number(n1), LoxValue::Number(n2)) => {
+                Ok(LoxValue::Number(n1 - n2))
             }
-            (TokenType::MINUS, LiteralValue::String(s1), LiteralValue::String(s2)) => {
-                Ok(LiteralValue::String(s1.replacen(s2, "", 1)))
+            (TokenType::MINUS, LoxValue::String(s1), LoxValue::String(s2)) => {
+                Ok(LoxValue::String(s1.replacen(s2, "", 1)))
             }
-            (TokenType::SLASH, LiteralValue::Number(n1), LiteralValue::Number(n2)) => {
+            (TokenType::SLASH, LoxValue::Number(n1), LoxValue::Number(n2)) => {
                 if *n2 == 0.0 {
                     return Err(RuntimeError::BadOperator(
                         operator.clone(),
                         "Division by zero.".to_string(),
                     ));
                 }
-                Ok(LiteralValue::Number(n1 / n2))
+                Ok(LoxValue::Number(n1 / n2))
             }
-            (TokenType::STAR, LiteralValue::Number(n1), LiteralValue::Number(n2)) => {
-                Ok(LiteralValue::Number(n1 * n2))
+            (TokenType::STAR, LoxValue::Number(n1), LoxValue::Number(n2)) => {
+                Ok(LoxValue::Number(n1 * n2))
             }
-            (TokenType::GREATER, LiteralValue::Number(n1), LiteralValue::Number(n2)) => {
-                Ok(LiteralValue::Boolean(n1 > n2))
+            (TokenType::GREATER, LoxValue::Number(n1), LoxValue::Number(n2)) => {
+                Ok(LoxValue::Boolean(n1 > n2))
             }
-            (TokenType::GREATER_EQUAL, LiteralValue::Number(n1), LiteralValue::Number(n2)) => {
-                Ok(LiteralValue::Boolean(n1 >= n2))
+            (TokenType::GREATER_EQUAL, LoxValue::Number(n1), LoxValue::Number(n2)) => {
+                Ok(LoxValue::Boolean(n1 >= n2))
             }
-            (TokenType::LESS, LiteralValue::Number(n1), LiteralValue::Number(n2)) => {
-                Ok(LiteralValue::Boolean(n1 < n2))
+            (TokenType::LESS, LoxValue::Number(n1), LoxValue::Number(n2)) => {
+                Ok(LoxValue::Boolean(n1 < n2))
             }
-            (TokenType::LESS_EQUAL, LiteralValue::Number(n1), LiteralValue::Number(n2)) => {
-                Ok(LiteralValue::Boolean(n1 <= n2))
+            (TokenType::LESS_EQUAL, LoxValue::Number(n1), LoxValue::Number(n2)) => {
+                Ok(LoxValue::Boolean(n1 <= n2))
             }
             (TokenType::BANG_EQUAL, _, _) => {
-                Ok(LiteralValue::Boolean(!self.is_equal(&left_lit, &right_lit)))
+                Ok(LoxValue::Boolean(!self.is_equal(&left_lit, &right_lit)))
             }
             (TokenType::EQUAL_EQUAL, _, _) => {
-                Ok(LiteralValue::Boolean(self.is_equal(&left_lit, &right_lit)))
+                Ok(LoxValue::Boolean(self.is_equal(&left_lit, &right_lit)))
             }
             _ => Err(RuntimeError::BadOperator(
                 operator.clone(),
@@ -102,15 +106,15 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         }
     }
 
-    fn visit_literal(&mut self, value: &LiteralValue) -> Result<LiteralValue, RuntimeError> {
+    fn visit_literal(&mut self, value: &LoxValue) -> Result<LoxValue, RuntimeError> {
         Ok(value.clone())
     }
 
-    fn visit_grouping(&mut self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
+    fn visit_grouping(&mut self, expr: &Expr) -> Result<LoxValue, RuntimeError> {
         self.evaluate(expr)
     }
 
-    fn visit_comma(&mut self, _: &Expr, right: &Expr) -> Result<LiteralValue, RuntimeError> {
+    fn visit_comma(&mut self, _: &Expr, right: &Expr) -> Result<LoxValue, RuntimeError> {
         self.evaluate(right)
     }
 
@@ -119,7 +123,7 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         condition: &Expr,
         then_branch: &Expr,
         else_branch: &Expr,
-    ) -> Result<LiteralValue, RuntimeError> {
+    ) -> Result<LoxValue, RuntimeError> {
         let condition_value = self.evaluate(condition)?;
 
         if self.is_truthy(&condition_value) {
@@ -129,13 +133,12 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         }
     }
 
-    fn visit_variable(&mut self, name: &Token, e: &Expr) -> Result<LiteralValue, RuntimeError> {
+    fn visit_variable(&mut self, name: &Token, e: &Expr) -> Result<LoxValue, RuntimeError> {
         Ok(self.look_up_variable(name, e)?)
-
         // Ok(self.environment.borrow().get(name)?)
     }
 
-    fn visit_assing(&mut self, name: &Token, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
+    fn visit_assing(&mut self, name: &Token, expr: &Expr) -> Result<LoxValue, RuntimeError> {
         let value = self.evaluate(expr)?;
         let distance = self.locals.get(expr);
         match distance {
@@ -146,6 +149,7 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
                 self.globals.assign(name, value.clone())?;
             }
         }
+
         // self.environment.borrow_mut().assign(name, value.clone())?;
         Ok(value)
     }
@@ -155,7 +159,7 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         left: &Expr,
         operator: &Token,
         right: &Expr,
-    ) -> Result<LiteralValue, RuntimeError> {
+    ) -> Result<LoxValue, RuntimeError> {
         let left_value = self.evaluate(left)?;
         if operator.t_type == TokenType::OR {
             if self.is_truthy(&left_value) {
@@ -169,21 +173,16 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
         Ok(self.evaluate(right)?)
     }
 
-    fn visit_call(
-        &mut self,
-        callee: &Expr,
-        paren: &Token,
-        arguments: &[Expr],
-    ) -> Result<LiteralValue, RuntimeError> {
+    fn visit_call(&mut self, callee: &Expr, paren: &Token, arguments: &[Expr]) -> Result<LoxValue, RuntimeError> {        
         let callee_val = self.evaluate(callee)?;
         let mut args = vec![];
         for arg in arguments {
             args.push(self.evaluate(arg)?);
         }
-
+        
         if let Some(fun) = callee_val.return_fn_if_callable() {
             if arguments.len() != fun.arity() {
-                return Err(RuntimeError::ToMantyArguments(
+                return Err(RuntimeError::ToManyArguments(
                     paren.clone(),
                     fun.arity(),
                     arguments.len(),
@@ -195,6 +194,43 @@ impl ExpressionVisitor<LiteralValue> for Interpreter {
             return Err(RuntimeError::BadCallable());
         }
     }
+
+    fn visit_get(&mut self, name: &Token, object: &Expr) -> Result<LoxValue, RuntimeError> {
+        
+        let is_this = if let Expr::This { .. } = object {
+            true
+        } else {
+            false
+        };
+
+
+        let obj = self.evaluate(object)?;
+        if let LoxValue::LoxInstance(i) = obj {
+            return Ok(i.borrow().get(Rc::clone(&i), name, is_this)?)
+        }
+        if let LoxValue::LoxClass(i) = obj {
+            return Ok(i.find_static(&name.lexeme)?)
+        }
+        Err(RuntimeError::OnlyInstancesHaveProperties())
+    }
+
+
+    fn visit_set(&mut self, object: &Expr, name: &Token, value: &Expr) -> Result<LoxValue, RuntimeError> {
+        let obj = self.evaluate(object)?;
+
+        if let LoxValue::LoxInstance(i) = obj {
+            let value = self.evaluate(value)?;
+            i.borrow_mut().set(name.clone(), value.clone());
+            return Ok(value);
+        }
+
+        Err(RuntimeError::OnlyInstancesHaveProperties())
+            
+        
+    }
+    fn visit_this(&mut self, keyword: &Token) -> Result<LoxValue, RuntimeError> {
+        self.look_up_variable(keyword, &Expr::Literal { id: 0, value: LoxValue::Nil })
+    }
 }
 impl StatementVisitor<()> for Interpreter {
     fn visit_expression(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
@@ -204,11 +240,11 @@ impl StatementVisitor<()> for Interpreter {
 
     fn visit_print(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
         let value = self.evaluate(expression)?;
-        println!("{}", self.stringify(&value));
+        println!("{}", value);
         Ok(())
     }
 
-    fn visit_var(&mut self, name: &Token, initializer: &Expr) -> Result<(), RuntimeError> {
+    fn visit_var_declaration(&mut self, name: &Token, initializer: &Expr) -> Result<(), RuntimeError> {
         let value = self.evaluate(initializer)?;
         self.environment.borrow_mut().define(&name.lexeme, value)?;
         Ok(())
@@ -296,17 +332,22 @@ impl StatementVisitor<()> for Interpreter {
         Err(RuntimeError::Break())
     }
 
-    fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt]) -> Result<(), RuntimeError> {
+    fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt], public: bool, is_static: bool) -> Result<(), RuntimeError> {
         let function = LoxFunction::new(
             Stmt::Function {
                 token: token.clone(),
                 params: params.to_vec(),
                 body: body.to_vec(),
+                public,
+                is_static
             },
             Rc::clone(&self.environment),
+            false,
+            true,
+            is_static
         );
 
-        self.environment.borrow_mut().define(&token.lexeme, LiteralValue::Callable(Rc::new(function)))?;
+        self.environment.borrow_mut().define(&token.lexeme, LoxValue::Callable(Rc::new(function)))?;
         Ok(())
     }
 
@@ -314,21 +355,33 @@ impl StatementVisitor<()> for Interpreter {
         let val = self.evaluate(v)?;
         Err(RuntimeError::Return(val))
     }
+
+    fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<(), RuntimeError> {
+        self.environment.borrow_mut().define(&name.lexeme, LoxValue::Nil)?;
+
+        let mut met = FxHashMap::default();
+        for method in methods  {
+            if let Stmt::Function { token, public, is_static, .. } = method {
+                let function = LoxFunction::new(method.clone(), Rc::clone(&self.environment), token.lexeme == "init", *public, *is_static);
+                met.insert(token.lexeme.clone(), function);
+            }
+        }
+        
+        let loxclass = LoxClass::new(name.lexeme.clone(), met);
+        self.environment.borrow_mut().assign(name, LoxValue::LoxClass(loxclass))?;
+        Ok(())
+    }
 }
 
 impl Interpreter {
     pub fn new(mut global_env: Box<Environment>) -> Self {
 
-        let _ = global_env.define("clock", LiteralValue::Callable(Rc::new(LoxClock::new())));
-        let _ = global_env.define("print", LiteralValue::Callable(Rc::new(LoxPrint::new())));
-
-        
-        /*
-        global_env.define(
-            "println",
-            LiteralValue::Callable(Box::new(LoxPrintLn::new())),
-        );
-        */
+        let _ = global_env.define("clock", LoxValue::Callable(Rc::new(LoxClock::new())));
+        let _ = global_env.define("print", LoxValue::Callable(Rc::new(LoxPrint::new())));
+        let _ = global_env.define("println", LoxValue::Callable(Rc::new(LoxPrintLn::new())));
+        let _ = global_env.define("dbg", LoxValue::Callable(Rc::new(LoxDbg::new())));
+        //let _ = global_env.define("true", LoxValue::Boolean(true));
+        //let _ = global_env.define("false", LoxValue::Boolean(false));
 
         Self {
             globals: global_env.clone(),
@@ -348,7 +401,7 @@ impl Interpreter {
         Ok(())
     }
     
-    fn evaluate(&mut self, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
+    fn evaluate(&mut self, expr: &Expr) -> Result<LoxValue, RuntimeError> {
         expr.accept(self)
     }
 
@@ -366,31 +419,34 @@ impl Interpreter {
         Ok(())
     }
 
-    fn is_equal(&self, left: &LiteralValue, right: &LiteralValue) -> bool {
+    fn is_equal(&self, left: &LoxValue, right: &LoxValue) -> bool {
         match (left, right) {
-            (LiteralValue::Nil, LiteralValue::Nil) => true,
-            (LiteralValue::Nil, _) | (_, LiteralValue::Nil) => false,
-            (LiteralValue::Number(n1), LiteralValue::Number(n2)) => n1 == n2,
-            (LiteralValue::String(s1), LiteralValue::String(s2)) => s1 == s2,
-            (LiteralValue::Boolean(b1), LiteralValue::Boolean(b2)) => b1 == b2,
+            (LoxValue::Nil, LoxValue::Nil) => true,
+            (LoxValue::Nil, _) | (_, LoxValue::Nil) => false,
+            (LoxValue::Number(n1), LoxValue::Number(n2)) => n1 == n2,
+            (LoxValue::String(s1), LoxValue::String(s2)) => s1 == s2,
+            (LoxValue::Boolean(b1), LoxValue::Boolean(b2)) => b1 == b2,
             _ => false,
         }
     }
 
-    fn stringify(&self, lit: &LiteralValue) -> String {
+    fn stringify(&self, lit: &LoxValue) -> String {
         match lit {
-            LiteralValue::Nil => "nil".to_string(),
-            LiteralValue::Number(n) => n.to_string(),
-            LiteralValue::String(s) => s.clone(),
-            LiteralValue::Boolean(b) => b.to_string(),
-            LiteralValue::Callable(_) => "Function".to_string(),
+            LoxValue::Nil => "nil".to_string(),
+            LoxValue::Number(n) => n.to_string(),
+            LoxValue::String(s) => s.clone(),
+            LoxValue::Boolean(b) => b.to_string(),
+            LoxValue::Callable(_) => "Callable".to_string(),
+            LoxValue::LoxInstance(l) => l.borrow().to_string(),
+            LoxValue::LoxClass(c) => c.to_string(),
+            LoxValue::LoxFunction(f) => f.to_string()
         }
     }
 
-    pub fn is_truthy(&self, value: &LiteralValue) -> bool {
+    pub fn is_truthy(&self, value: &LoxValue) -> bool {
         match value {
-            LiteralValue::Boolean(b) => *b,
-            LiteralValue::Nil => false,
+            LoxValue::Boolean(b) => *b,
+            LoxValue::Nil => false,
             _ => true,
         }
     }
@@ -399,8 +455,7 @@ impl Interpreter {
         self.locals.insert(expr, depth);
     }
 
-    pub fn look_up_variable(&mut self, name: &Token, expr: &Expr) -> Result<LiteralValue, RuntimeError> {
-    
+    pub fn look_up_variable(&mut self, name: &Token, expr: &Expr) -> Result<LoxValue, RuntimeError> {
         if let Some(opt) = self.locals.get(expr) {
             return Ok(self.environment.borrow().get_at(*opt, &name.lexeme)?);
         } else {

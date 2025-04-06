@@ -1,6 +1,5 @@
 use super::error_types::runtime_error::RuntimeError;
-use super::lox::Lox;
-use super::syntax::components::expression::LiteralValue;
+use super::syntax::components::expression::LoxValue;
 use super::syntax::token::Token;
 use super::syntax::token_type::TokenType;
 use std::cell::RefCell;
@@ -9,7 +8,7 @@ use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct Environment {
-    values: HashMap<String, LiteralValue>,
+    values: HashMap<String, LoxValue>,
     enclosing: Option<Rc<RefCell<Environment>>>,
 }
 
@@ -21,7 +20,7 @@ impl Environment {
         }
     }
 
-    pub fn define(&mut self, name: &str, value: LiteralValue) -> Result<(), RuntimeError> {
+    pub fn define(&mut self, name: &str, value: LoxValue) -> Result<(), RuntimeError> {
         if self.values.contains_key(name) {
             return Err(RuntimeError::RedefinedVariable(name.to_owned()));
         }
@@ -29,20 +28,19 @@ impl Environment {
         Ok(())
     }
 
-    pub fn get(&self, name: &Token) -> Result<LiteralValue, RuntimeError> {
-        if let Some(value) = self.values.get(&name.lexeme) {
-            return Ok(value.clone());
+    pub fn get(&self, name: &Token) -> Result<LoxValue, RuntimeError> {
+        match self.values.get(&name.lexeme) {
+            Some(value) => Ok(value.clone()),
+            None => match &self.enclosing {
+                Some(enclosing) => enclosing.borrow().get(name),
+                None => Err(RuntimeError::UndefinedVariable(name.clone())),
+            },
         }
-        if let Some(enclosing) = &self.enclosing {
-            return enclosing.borrow().get(name);
-        }
-        Err(RuntimeError::UndefinedVariable(name.clone()))
     }
     
-    pub fn assign(&mut self, name: &Token, value: LiteralValue) -> Result<(), RuntimeError> {
+    pub fn assign(&mut self, name: &Token, value: LoxValue) -> Result<(), RuntimeError> {
         if self.values.contains_key(&name.lexeme) {
             self.values.insert(name.lexeme.clone(), value);
-            
             return Ok(());
         }
         if let Some(enclosing) = &self.enclosing {
@@ -61,37 +59,27 @@ impl Environment {
         }
         env
     }
-    /*
-    let mut env = self.enclosing.as_ref().map(Rc::clone);
-        for _ in 0..distance {
-            env = match &env {
-                Some(e) => e.borrow_mut().enclosing.take(),
-                None => return None,
-            };
-        }
-        env
-    */
-
-    pub fn get_at(&self, distance: usize, name: &str) -> Result<LiteralValue, RuntimeError> {
+    
+    pub fn get_at(&self, distance: usize, name: &str) -> Result<LoxValue, RuntimeError> {
         match self.ancestor(distance) {
             Some(env) => env.borrow().values.get(name).cloned().ok_or_else(|| {
                 RuntimeError::UndefinedVariable(Token {
                     lexeme: name.to_string(),
                     line: 0,
-                    literal: LiteralValue::Nil,
+                    literal: LoxValue::Nil,
                     t_type: TokenType::VAR,
                 })
             }),
             None => Err(RuntimeError::UndefinedVariable(Token {
                 lexeme: name.to_string(),
                 line: 0,
-                literal: LiteralValue::Nil,
+                literal: LoxValue::Nil,
                 t_type: TokenType::VAR,
             })),
         }
     }
 
-    pub fn assing_at(&mut self, distance: usize, name: &str, value: LiteralValue) {
+    pub fn assing_at(&mut self, distance: usize, name: &str, value: LoxValue) {
         match self.ancestor(distance) {
             Some(e) => {
                 e.borrow_mut().values.insert(name.to_string(), value);

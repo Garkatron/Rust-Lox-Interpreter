@@ -20,11 +20,15 @@ pub enum ParseError {
     ExpectedVariableDeclaration(usize),
     InvalidAssignmentTarget(usize),
     ExpectedRightBraceAfterBlock(usize),
+    ExpectedRightBraceAfterClassBody(usize),
+    ExpectedLeftBraceAfterClassBody(usize),
     ExpectedSomeTokenTypeAfterSomething(TokenType, usize, String),
     ExpectedBreak(usize),
     TooManyArguments(usize),
     ExpectedIdentifier(usize, String),
-    ExpectedParameterName(usize)
+    ExpectedParameterName(usize),
+    ExpectClassName(usize),
+    ExpectedPropertyNameAfterDot(usize)
 }
 
 impl fmt::Display for ParseError {
@@ -93,6 +97,18 @@ impl fmt::Display for ParseError {
             }
             ParseError::ExpectedParameterName(line) => {
                 write!(f, "[PARSER]: Expect parameter name at line {}", line)
+            }
+            ParseError::ExpectClassName(line) => {
+                write!(f, "[PARSER]: Expect class name {}", line)
+            }
+            ParseError::ExpectedLeftBraceAfterClassBody(line) => {
+                write!(f, "[PARSER]: Expect '{{' after class body. At line {}", line)
+            }
+            ParseError::ExpectedRightBraceAfterClassBody(line) => {
+                write!(f, "[PARSER]: Expect '}}' after class body. At line {}", line)
+            }
+            ParseError::ExpectedPropertyNameAfterDot(line) => {
+                write!(f, "[PARSER]: Expected property name after '.' at line {}", line)
             }
         }
     }
@@ -165,6 +181,18 @@ impl ParseError {
             }
             ParseError::ExpectedParameterName(line) => {
                 format!("[PARSER]: Expect parameter name at line {}", line)
+            }
+            ParseError::ExpectedLeftBraceAfterClassBody(line) => {
+                format!("[PARSER]: Expect '{{' after class body. At line {}", line)
+            }
+            ParseError::ExpectedRightBraceAfterClassBody(line) => {
+                format!("[PARSER]: Expect '}}' after class body. At line {}", line)
+            }
+            ParseError::ExpectClassName(line) => {
+                format!("[PARSER]: Expect '}}' after class body. At line {}", line)
+            }
+            ParseError::ExpectedPropertyNameAfterDot(line) => {
+                format!("[PARSER]: Expected property name after '.' at line {}", line)
             }
         }
     }

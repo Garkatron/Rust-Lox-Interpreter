@@ -1,17 +1,17 @@
 use std::fmt::Display;
 
-use super::{components::expression::LiteralValue, token_type::TokenType};
+use super::{components::expression::LoxValue, token_type::TokenType};
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
 pub struct Token {
     pub t_type: TokenType,
     pub lexeme: String,
-    pub literal: LiteralValue,
+    pub literal: LoxValue,
     pub line: usize,
 }
 
 impl Token {
-    pub fn new(t_type: TokenType, lexeme: String, literal: LiteralValue, line: usize) -> Token {
+    pub fn new(t_type: TokenType, lexeme: String, literal: LoxValue, line: usize) -> Token {
         Token {
             t_type,
             lexeme,
@@ -19,7 +19,7 @@ impl Token {
             line,
         }
     }
-    pub fn from(t_type: TokenType, lexeme: String, literal: LiteralValue, line: usize) -> Token {
+    pub fn from(t_type: TokenType, lexeme: String, literal: LoxValue, line: usize) -> Token {
         Token {
             t_type,
             lexeme,

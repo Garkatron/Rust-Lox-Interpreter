@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::core::syntax::components::expression::LiteralValue;
+use crate::core::syntax::components::expression::LoxValue;
 use crate::core::syntax::token::Token;
 use crate::utils::colors::Color;
 
@@ -26,14 +26,17 @@ impl Scanner {
         keywords.insert(ELSE.to_string(), ELSE);
         keywords.insert(ELSE.to_string(), FALSE);
         keywords.insert(FOR.to_string(), FOR);
-        keywords.insert(FUN.to_string(), FUN);
+        keywords.insert(PUB.to_string(), PUB);
+        keywords.insert(STATIC.to_string(), STATIC);
+        keywords.insert(FN.to_string(), FN);
         keywords.insert(IF.to_string(), IF);
         keywords.insert(NIL.to_string(), NIL);
         keywords.insert(OR.to_string(), OR);
         keywords.insert(PRINT.to_string(), PRINT);
         keywords.insert(SUPER.to_string(), SUPER);
         keywords.insert(THIS.to_string(), THIS);
-        keywords.insert(THIS.to_string(), TRUE);
+        keywords.insert(TRUE.to_string(), TRUE);
+        keywords.insert(FALSE.to_string(), FALSE);
         keywords.insert(VAR.to_string(), VAR);
         keywords.insert(WHILE.to_string(), WHILE);
         keywords.insert(LOOP.to_string(), LOOP);
@@ -59,7 +62,7 @@ impl Scanner {
         self.tokens.push(Token::from(
             EOF,
             "".to_string(),
-            LiteralValue::Nil,
+            LoxValue::Nil,
             self.line,
         ));
 
@@ -203,7 +206,7 @@ impl Scanner {
         }
         self.add_token_lit(
             NUMBER,
-            LiteralValue::Number(self.source[self.start..self.current].parse().expect("[SCANNER]: FloatError")),
+            LoxValue::Number(self.source[self.start..self.current].parse().expect("[SCANNER]: FloatError")),
         )
     }
 
@@ -226,8 +229,14 @@ impl Scanner {
         self.advance();
 
         // Trim the surrounding quotes.
-        let value: String = self.source[self.start + 1..self.current - 1].to_string();
-        self.add_token_lit(STRING, LiteralValue::String(value))
+        let value = match self.source.get(self.start + 1..self.current - 1) {
+            Some(v) => v.to_string(),
+            None => {
+                self.error("[SCANNER][ERROR]: Invalid UTF-8 range in string.");
+                return;
+            }
+        };
+                self.add_token_lit(STRING, LoxValue::String(value))
     }
 
     fn char_match(&mut self, expected: char) -> bool {
@@ -291,10 +300,10 @@ impl Scanner {
     fn add_token(&mut self, t_type: TokenType) {
         let lexeme = self.source[self.start..self.current].to_string();
         self.tokens
-            .push(Token::from(t_type, lexeme, LiteralValue::Nil, self.line));
+            .push(Token::from(t_type, lexeme, LoxValue::Nil, self.line));
     }
 
-    fn add_token_lit(&mut self, t_type: TokenType, literal: LiteralValue) {
+    fn add_token_lit(&mut self, t_type: TokenType, literal: LoxValue) {
         let lexeme = self.source[self.start..self.current].to_string();
         self.tokens
             .push(Token::from(t_type, lexeme, literal, self.line));

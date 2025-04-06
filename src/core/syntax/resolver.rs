@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use rustc_hash::FxHashMap;
 
-use super::components::expression::{Expr, LiteralValue, Visitor as ExpressionVisitor};
+use super::components::expression::{Expr, LoxValue, Visitor as ExpressionVisitor};
 use super::components::stmt::{Stmt, Visitor as StatementVisitor};
 use super::token::Token;
 use crate::core::error_types::runtime_error::RuntimeError;
@@ -15,14 +15,22 @@ use crate::utils::colors::Color;
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum FunctionType {
     NONE,
-    FUNCTION
+    METHOD,
+    FUNCTION,
+    INITIALIZER
+}
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum ClassType {
+    NONE,
+    CLASS
 }
 
 pub struct Resolver {
     interpreter: Rc<RefCell<Interpreter>>,
     scopes: Vec<FxHashMap<String, bool>>,
     unused_variables: Vec<String>,
-    current_function: FunctionType
+    current_function: FunctionType,
+    current_class: ClassType
 }
 
 impl ExpressionVisitor<()> for Resolver {
@@ -64,7 +72,7 @@ impl ExpressionVisitor<()> for Resolver {
         self.resolve_expr(expression)?;
         Ok(())
     }
-    fn visit_literal(&mut self, _value: &LiteralValue) -> Result<(), RuntimeError> {
+    fn visit_literal(&mut self, _value: &LoxValue) -> Result<(), RuntimeError> {
         Ok(())
     }
     fn visit_logical(&mut self, left: &Expr, _operator: &Token, right: &Expr) -> Result<(), RuntimeError> {
@@ -90,6 +98,24 @@ impl ExpressionVisitor<()> for Resolver {
     fn visit_comma(&mut self, _left: &Expr, _right: &Expr) -> Result<(), RuntimeError> {
         Ok(())
     }
+
+    fn visit_get(&mut self, _name: &Token, object: &Expr) -> Result<(), RuntimeError> {
+        self.resolve_expr(object)?;
+        Ok(())
+    }
+    fn visit_set(&mut self, object: &Expr, _name: &Token, value: &Expr) -> Result<(), RuntimeError> {
+        self.resolve_expr(value)?;
+        self.resolve_expr(object)?;
+        Ok(())
+    }
+    fn visit_this(&mut self, keyword: &Token) -> Result<(), RuntimeError> {
+        if self.current_class == ClassType::NONE {
+            Lox::print_error("Can't use 'this' outside a class.");
+            return Ok(())
+        }
+        self.resolve_local(&Expr::Literal { id: 0, value: LoxValue::Nil },keyword);
+        Ok(())
+    }
 }
 
 impl StatementVisitor<()> for Resolver {
@@ -99,30 +125,18 @@ impl StatementVisitor<()> for Resolver {
         self.end_scope();
         Ok(())
     }
-    fn visit_var(&mut self, name: &Token, initializer: &Expr) -> Result<(), RuntimeError> {
+    fn visit_var_declaration(&mut self, name: &Token, initializer: &Expr) -> Result<(), RuntimeError> {
         self.declare(name);
-        
-        match initializer {
-            Expr::Literal { value, .. } => {
-                if *value != LiteralValue::Nil {
-                    self.resolve_expr(initializer)?;
-                }
-            }
-            _ => {
-               
-            }
-        }
-    
+        self.resolve_expr(initializer)?; 
         self.define(name);
         self.unused_variables.push(name.lexeme.clone());
-    
         Ok(())
     }
     
-    fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt]) -> Result<(), RuntimeError> {
+    fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt], public: bool, is_static: bool) -> Result<(), RuntimeError> {
         self.declare(token);
         self.define(token);
-        self.resolve_function(Stmt::Function { token: token.clone(), params: params.to_vec(), body: body.to_vec() }, FunctionType::FUNCTION)?;
+        self.resolve_function(&Stmt::Function { token: token.clone(), params: params.to_vec(), body: body.to_vec(), public, is_static }, FunctionType::FUNCTION)?;
         Ok(())
     }
     fn visit_expression(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
@@ -144,9 +158,13 @@ impl StatementVisitor<()> for Resolver {
     fn visit_return(&mut self, _keyword: &Token, value: &Expr) -> Result<(), RuntimeError> {
         if self.current_function == FunctionType::NONE {
             // Lox::print_error("Can't return from top-level code.");
-
-            return Err(RuntimeError::Return(LiteralValue::Nil));
+            return Err(RuntimeError::Return(LoxValue::Nil));
         }
+
+        if self.current_function == FunctionType::INITIALIZER {
+            return Err(RuntimeError::CantReturnFromInitializer());
+        }
+
         
         // ! NEED CHECK IF RETURN HAS A VALUE, MAKE THE VALUE OPTIONAL 
 
@@ -168,7 +186,39 @@ impl StatementVisitor<()> for Resolver {
         self.resolve_statement(body)?;
         Ok(())
     }
+    fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<(), RuntimeError> {
+        
+        let enclosing_class = self.current_class;
+        self.current_class = ClassType::CLASS;
 
+        self.declare(name);
+        self.define(name);
+
+        self.begin_scope();
+        if let Some(current_scope) = self.scopes.last_mut() {
+            current_scope.insert("this".to_string(), true);
+        }
+
+        for method in methods {
+            let declaration = if let Stmt::Function { token, .. } = method {
+                if token.lexeme == "init" {
+                    FunctionType::INITIALIZER
+                } else {
+                    FunctionType::METHOD
+                }
+            } else {
+                todo!();
+            };
+    
+            
+            self.resolve_function(method, declaration)?;
+        }
+        self.end_scope();
+        self.current_class = enclosing_class;
+
+        Ok(())
+    }
+    
 }
 
 impl Resolver {
@@ -178,6 +228,7 @@ impl Resolver {
             scopes: vec![],
             unused_variables: vec![],
             current_function: FunctionType::NONE,
+            current_class: ClassType::CLASS
         };
     
         resolver.begin_scope();
@@ -210,14 +261,14 @@ impl Resolver {
         expr.accept(self)?;
         Ok(())
     }
-    fn resolve_function(&mut self, function: Stmt, ftype: FunctionType) -> Result<(), RuntimeError> {
-        if let Stmt::Function { params, body , ..} = function {
+    fn resolve_function(&mut self, function: &Stmt, ftype: FunctionType) -> Result<(), RuntimeError> {
+        if let Stmt::Function { params, body, ..} = function {
             let enclosing_function = self.current_function;
             self.current_function = ftype;
             self.begin_scope();
             for param in params {
                 self.declare(&param);
-                self.define(&param);
+                self.define(&param);  
             }
             self.resolve_statements(&body)?;
             self.end_scope();

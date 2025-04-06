@@ -17,8 +17,9 @@ pub enum TokenType {
     IDENTIFIER, STRING, NUMBER,
 
     // Keywords.
-    AND, CLASS, ELSE, FALSE, FUN, FOR, IF, NIL, OR,
+    AND, CLASS, ELSE, FALSE, FN, FOR, IF, NIL, OR,
     PRINT, RETURN, SUPER, THIS, TRUE, VAR, WHILE, LOOP, BREAK,
+    STATIC, PUB,
 
     EOF
 }
@@ -60,7 +61,7 @@ impl fmt::Display for TokenType {
             TokenType::CLASS => "class",
             TokenType::ELSE => "else",
             TokenType::FALSE => "false",
-            TokenType::FUN => "fun",
+            TokenType::FN => "fn",
             TokenType::FOR => "for",
             TokenType::IF => "if",
             TokenType::NIL => "nil",
@@ -75,6 +76,8 @@ impl fmt::Display for TokenType {
             TokenType::EOF => "eof",
             TokenType::LOOP => "loop",
             TokenType::BREAK => "break",
+            TokenType::PUB => "pub",
+            TokenType::STATIC => "static"
         };
         write!(f, "{}", token_str)
     }
@@ -111,7 +114,7 @@ impl TokenType {
             TokenType::CLASS => "class".to_string(),
             TokenType::ELSE => "else".to_string(),
             TokenType::FALSE => "false".to_string(),
-            TokenType::FUN => "fun".to_string(),
+            TokenType::FN => "fun".to_string(),
             TokenType::FOR => "for".to_string(),
             TokenType::IF => "if".to_string(),
             TokenType::NIL => "nil".to_string(),
@@ -126,6 +129,8 @@ impl TokenType {
             TokenType::EOF => "eof".to_string(),
             TokenType::LOOP => "loop".to_string(),
             TokenType::BREAK => "break".to_string(),
+            TokenType::PUB => "pub".to_string(),
+            TokenType::STATIC => "static".to_string()
         }
     }
 }
