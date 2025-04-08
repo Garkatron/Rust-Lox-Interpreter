@@ -29,7 +29,9 @@ pub enum ParseError {
     ExpectedParameterName(usize),
     ExpectClassName(usize),
     ExpectedPropertyNameAfterDot(usize),
-    ExpectedSuperClassName(usize)
+    ExpectedSuperClassName(usize),
+    ExpectDotAfterSuper(usize),
+    ExpectSuperClassMethodName(usize)
 }
 
 impl fmt::Display for ParseError {
@@ -113,6 +115,12 @@ impl fmt::Display for ParseError {
             }
             ParseError::ExpectedSuperClassName(line) => {
                 write!(f, "[PARSER]: Expected superclass name at line {}", line)
+            }
+            ParseError::ExpectSuperClassMethodName(line) => {
+                write!(f, "[PARSER]: Expect superclass method name {}", line)
+            }
+            ParseError::ExpectDotAfterSuper(line) => {
+                write!(f, "[PARSER]: Expect dot after super name {}", line)
             }
         }
     }
@@ -200,6 +208,12 @@ impl ParseError {
             }
             ParseError::ExpectedSuperClassName(line) => {
                 format!("[PARSER]: Expected superclass name at line {}", line)
+            }
+            ParseError::ExpectSuperClassMethodName(line) => {
+                format!("[PARSER]: Expect superclass method name {}", line)
+            }
+            ParseError::ExpectDotAfterSuper(line) => {
+                format!("[PARSER]: Expect dot after super name {}", line)
             }
         }
     }

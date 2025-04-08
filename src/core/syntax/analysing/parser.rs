@@ -679,6 +679,14 @@ impl Parser {
                 value: self.previous().literal.clone(),
             });
         }
+
+        if self.match_tokens(&[SUPER]) {
+            let keyword = self.previous();
+            self.consume(DOT, ParseError::ExpectDotAfterSuper(self.peek().line))?;
+            let method = self.consume(IDENTIFIER, ParseError::ExpectSuperClassMethodName(self.peek().line))?;
+            return Ok(Expr::Super { keyword, method })
+        }
+
         if self.match_tokens(&[THIS]) {
             return Ok(Expr::This { 
                 id: Expr::new_id(),
