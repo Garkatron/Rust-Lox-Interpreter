@@ -40,6 +40,10 @@ pub enum Expr {
         name: Token,
         value: Box<Expr>
     },
+    Super {
+        keyword: Token,
+        method: Token
+    },
     Grouping {
         id: usize,
         expression: Box<Expr>,
@@ -163,6 +167,7 @@ pub trait Visitor<R> {
     fn visit_get(&mut self, name: &Token, object: &Expr) -> Result<R, RuntimeError>;
     fn visit_set(&mut self, object: &Expr, name: &Token, value: &Expr) -> Result<R, RuntimeError>;
     fn visit_this(&mut self, keyword: &Token) -> Result<R, RuntimeError>;
+    fn visit_super(&mut self, keyword: &Token, keyword: &Token) -> Result<R, RuntimeError>;
 }
 
 impl Expr {
@@ -200,6 +205,9 @@ impl Expr {
             }
             Expr::This { keyword, .. } => {
                 visitor.visit_this(keyword)
+            }
+            Expr::Super { keyword, method } => {
+                visitor.visit_super(keyword, method)
             }
         }
     }
@@ -259,6 +267,9 @@ impl fmt::Display for Expr {
             }
             Expr::This { keyword , ..} => {
                 write!(f,"This {}", keyword)
+            }
+            Expr::Super { keyword, method } => {
+                write!(f,"Super {} {}", keyword, method)
             }
         }
     }
