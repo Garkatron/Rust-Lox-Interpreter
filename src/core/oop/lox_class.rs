@@ -9,11 +9,12 @@ use super::lox_instance::LoxInstance;
 pub struct LoxClass {
     pub name: String,
     methods: FxHashMap<String, LoxFunction>,
-    statics: FxHashMap<String, LoxFunction>
+    statics: FxHashMap<String, LoxFunction>,
+    super_class: Option< Box<LoxClass>>
 }
 
 impl LoxClass {
-    pub fn new(name: String, methods: FxHashMap<String, LoxFunction>) -> Self {
+    pub fn new(name: String, methods: FxHashMap<String, LoxFunction>, super_class: Option<Box<LoxClass>>) -> Self {
         let c_methods = methods.iter().filter_map(|(name, func)| {
             if !func.is_static() {
                 Some((name.clone(), func.clone())) 
@@ -34,6 +35,7 @@ impl LoxClass {
             name,
             methods: c_methods, 
             statics,
+            super_class
         }
     }
 
@@ -51,8 +53,11 @@ impl LoxClass {
         if let Some(method) = self.methods.get(name) {
             return LoxValue::LoxFunction(Rc::new(method.clone()));
         }
-        LoxValue::Nil
 
+        if let Some(s_klass) = &self.super_class {
+            return s_klass.find_method(name).clone();
+        }
+        LoxValue::Nil
     }
 }
 

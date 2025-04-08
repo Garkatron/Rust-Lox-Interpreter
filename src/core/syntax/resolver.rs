@@ -186,13 +186,25 @@ impl StatementVisitor<()> for Resolver {
         self.resolve_statement(body)?;
         Ok(())
     }
-    fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<(), RuntimeError> {
+    fn visit_class(&mut self, name: &Token, methods: &[Stmt], super_class: &Option<Expr>) -> Result<(), RuntimeError> {
         
         let enclosing_class = self.current_class;
         self.current_class = ClassType::CLASS;
 
         self.declare(name);
         self.define(name);
+
+        if let Some(t_super_class) = super_class {
+            if let Expr::Variable {name: ref n, .. }= *t_super_class {
+                if name.lexeme == n.lexeme {
+                    return Err(RuntimeError::ClassInheritFromItself())
+                }
+            }
+        }
+
+        if let Some(t_super_class) = super_class {
+            self.resolve_expr(t_super_class)?;
+        }
 
         self.begin_scope();
         if let Some(current_scope) = self.scopes.last_mut() {

@@ -1,27 +1,9 @@
-class Test {
-  pub static testStatic() {
-    println("Static Test");
-    Test.testStatic();
-  }
-
-  pub testInstance() {
-    println("Instance Test");
-  }
-
-  privateMethod() {
-    println("Private Method");
-  }
-  pub callToStaticInsideMethod() {
-    Test.testStatic();
+class Doughnut {
+  pub cook() {
+    print "Fry until golden brown.";
   }
 }
 
-var t = Test();
-t.callToStaticInsideMethod();
+class BostonCream < Doughnut {}
 
-/*
-Test.testStatic();  // Static method called via class
-t.testInstance();   // Instance method called via object
-t.privateMethod(); // Error: private method cannot be called outside the class
-t.unexistentMethod();
-*/
+BostonCream().cook();

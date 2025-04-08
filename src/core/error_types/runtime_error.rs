@@ -21,6 +21,8 @@ pub enum RuntimeError {
     CantReturnFromInitializer(),
     CantAccessPrivateMethod(),
     CantCallStaticMethodFromInstance(),
+    ClassInheritFromItself(),
+    SuperClassMustBeSuperAClass()
 }
 
 impl fmt::Display for RuntimeError {
@@ -76,7 +78,14 @@ impl fmt::Display for RuntimeError {
             }
             RuntimeError::CantCallStaticMethodFromInstance() => {
                 write!(f,"[RUNTIME ERROR]: Cannot call a static method from an instance of the class.")
-            }            
+            }   
+            RuntimeError::ClassInheritFromItself() => {
+                write!(f,"[RUNTIME ERROR]: A class can't inherit from itself.")
+            }
+            RuntimeError::SuperClassMustBeSuperAClass() => {
+                write!(f,"[RUNTIME ERROR]: SuperClass must be a SuperClass.")
+
+            }         
         }
     }
 }

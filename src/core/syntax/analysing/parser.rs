@@ -50,7 +50,13 @@ impl Parser {
 
     fn class_declaration(&mut self) -> Result<Stmt, ParseError> {
         let name = self.consume(IDENTIFIER, ParseError::ExpectClassName(self.peek().line))?;
-        
+
+        let mut super_class= None;
+        if self.match_tokens(&[LESS]) {
+            self.consume(IDENTIFIER, ParseError::ExpectedSuperClassName(self.peek().line))?;
+            super_class = Some(Expr::Variable { id: Expr::new_id(), name: self.previous(), value: Box::new(Expr::Literal { id: Expr::new_id(), value: LoxValue::Nil })});
+        }
+
         self.consume(LEFT_BRACE, ParseError::ExpectedLeftBraceAfterClassBody(self.peek().line))?;
        
         let mut methods = vec![];
@@ -61,7 +67,7 @@ impl Parser {
         
         self.consume(RIGHT_BRACE, ParseError::ExpectedRightBraceAfterClassBody(self.peek().line))?;
 
-        Ok(Stmt::Class { name, methods })
+        Ok(Stmt::Class { name, methods, super_class })
     }
 
     fn var_declaration(&mut self) -> Result<Stmt, ParseError> {

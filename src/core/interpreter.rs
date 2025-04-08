@@ -185,7 +185,7 @@ impl ExpressionVisitor<LoxValue> for Interpreter {
                 return Err(RuntimeError::ToManyArguments(
                     paren.clone(),
                     fun.arity(),
-                    arguments.len(),
+                    arguments.len()
                 ));
             } else {
                 return Ok(fun.call(self, args)?);
@@ -356,7 +356,19 @@ impl StatementVisitor<()> for Interpreter {
         Err(RuntimeError::Return(val))
     }
 
-    fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<(), RuntimeError> {
+    fn visit_class(&mut self, name: &Token, methods: &[Stmt], super_class: &Option<Expr>) -> Result<(), RuntimeError> {
+        let mut super_klass = None;
+
+        if let Some(t_super_class) = super_class {
+            let evaluated = self.evaluate(t_super_class)?;
+        
+            if let LoxValue::LoxClass(c) = &evaluated {
+                super_klass = Some(Box::new(c.clone()));
+            } else {
+                return Err(RuntimeError::SuperClassMustBeSuperAClass());
+            }
+        }
+        
         self.environment.borrow_mut().define(&name.lexeme, LoxValue::Nil)?;
 
         let mut met = FxHashMap::default();
@@ -367,7 +379,7 @@ impl StatementVisitor<()> for Interpreter {
             }
         }
         
-        let loxclass = LoxClass::new(name.lexeme.clone(), met);
+        let loxclass: LoxClass = LoxClass::new(name.lexeme.clone(), met, super_klass);
         self.environment.borrow_mut().assign(name, LoxValue::LoxClass(loxclass))?;
         Ok(())
     }
