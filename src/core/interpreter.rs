@@ -231,6 +231,9 @@ impl ExpressionVisitor<LoxValue> for Interpreter {
     fn visit_this(&mut self, keyword: &Token) -> Result<LoxValue, RuntimeError> {
         self.look_up_variable(keyword, &Expr::Literal { id: 0, value: LoxValue::Nil })
     }
+    fn visit_super(&mut self, keyword: &Token, keyword: &Token) -> Result<LoxValue, RuntimeError> {
+        
+    }
 }
 impl StatementVisitor<()> for Interpreter {
     fn visit_expression(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
@@ -371,6 +374,11 @@ impl StatementVisitor<()> for Interpreter {
         
         self.environment.borrow_mut().define(&name.lexeme, LoxValue::Nil)?;
 
+        if let Some(ref s_klass) = super_klass.clone() {
+            self.environment = Rc::new(RefCell::new(Environment::new(Some(Rc::clone(&self.environment)))));
+            self.environment.borrow_mut().define("super", LoxValue::LoxClass(*s_klass.clone()));
+        }
+
         let mut met = FxHashMap::default();
         for method in methods  {
             if let Stmt::Function { token, public, is_static, .. } = method {
@@ -379,7 +387,15 @@ impl StatementVisitor<()> for Interpreter {
             }
         }
         
-        let loxclass: LoxClass = LoxClass::new(name.lexeme.clone(), met, super_klass);
+        let loxclass: LoxClass = LoxClass::new(name.lexeme.clone(), met, super_klass.clone());
+
+        if let Some(enc) = {
+            let env = self.environment.borrow();
+            env.enclosing.clone()
+        } {
+            self.environment = enc.clone();
+        }
+
         self.environment.borrow_mut().assign(name, LoxValue::LoxClass(loxclass))?;
         Ok(())
     }

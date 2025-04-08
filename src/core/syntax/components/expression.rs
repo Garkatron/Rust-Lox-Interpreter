@@ -7,7 +7,7 @@ use crate::core::oop::lox_class::LoxClass;
 use crate::core::oop::lox_instance::LoxInstance;
 use crate::core::{error_types::runtime_error::RuntimeError, syntax::token::Token};
 use std::sync::atomic::AtomicUsize;
-static NEXT_ID: AtomicUsize = AtomicUsize::new(1);
+static NEXT_ID: AtomicUsize = AtomicUsize::new(2);
 use std::hash::Hasher;
 use std::hash::Hash;
 

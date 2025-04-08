@@ -116,6 +116,10 @@ impl ExpressionVisitor<()> for Resolver {
         self.resolve_local(&Expr::Literal { id: 0, value: LoxValue::Nil },keyword);
         Ok(())
     }
+    fn visit_super(&mut self, _keyword: &Token, keyword: &Token) -> Result<(), RuntimeError> {
+        self.resolve_local(&Expr::Literal { id: 2, value: LoxValue::Nil }, keyword);
+        Ok(())
+    }
 }
 
 impl StatementVisitor<()> for Resolver {
@@ -204,6 +208,11 @@ impl StatementVisitor<()> for Resolver {
 
         if let Some(t_super_class) = super_class {
             self.resolve_expr(t_super_class)?;
+            self.begin_scope();
+            if let Some(scope) = self.scopes.last_mut() {
+                scope.insert("super".into(), true);
+            }
+            
         }
 
         self.begin_scope();
@@ -226,6 +235,9 @@ impl StatementVisitor<()> for Resolver {
             self.resolve_function(method, declaration)?;
         }
         self.end_scope();
+        if let Some(_s_klass) = super_class {
+            self.end_scope();
+        }
         self.current_class = enclosing_class;
 
         Ok(())
