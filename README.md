@@ -1,8 +1,16 @@
+¡Perfecto! Aquí tienes la versión en inglés con buen estilo para GitHub, usando Markdown limpio, claro y con un tono personal pero profesional:
+
+---
+
 # Rox
+### 🦀 A badly written Rust **Lox** tree-walk interpreter
 
-###### _Unfinished_
+I started this project because I wanted to learn how programming languages work under the hood. I already know Java and enjoy it, but I was looking for something more challenging — so I decided to write it in Rust, a very different language I’ve been wanting to learn and practice.
 
-### 🦀 A **Rust**-coded _Lox_ interpreter
+⚠️ **Warning:** This code is full of design mistakes and bad practices, especially around variable references. Use it at your own risk! I don’t recommend it for learning — it’s a playground, not a guide.
+
+> 🙏 Special thanks to **Robert Nystrom**  
+> 📖 https://craftinginterpreters.com
 
 ---
 
@@ -11,13 +19,11 @@
 ### ✅ **Tokens**
 
 ### ✅ **Grammar**
-
-- ✅ **`EXTRA`**: Comma Operator
-- ✅ **`EXTRA`**: Ternary Operator
+- ✅ **`EXTRA`**: Comma operator
+- ✅ **`EXTRA`**: Ternary operator
 
 ### ✅ **Lexer**
-
-- ✅ **`EXTRA`**: Multiline Comments
+- ✅ **`EXTRA`**: Multiline comments
 
 ### ✅ **Parser**
 
@@ -26,15 +32,27 @@
 ### ✅ **Statements**
 
 ### ✅ **Interpreter**
+- ✅ Global variables
+- ❌ **`EXTRA`**: Comma operator (not yet implemented)
+- ✅ **`EXTRA`**: Ternary operator
 
-- ✅ Global Variables
-- ❌ **`EXTRA`**: Comma Operator
-- **✅ `EXTRA`**: Ternary Operator
+### ✅ **Object-Oriented Programming (OOP)**
+- ✅ `pub` (public/private methods)
+- ✅ `static` (class/static methods)
+- ✅ Inheritance
 
-### ❌ **Lox**
+### ❌ Extended STD
+
+### ✅ **Lox Language Support**
+
+### 🛠️ Custom Features
+- `loop {}` block
+- `while {} else {}` block
 
 ---
 
-## 📚 Based on
+## 📚 Based On
 
 📖 [Crafting Interpreters](https://craftinginterpreters.com)
+
+---
