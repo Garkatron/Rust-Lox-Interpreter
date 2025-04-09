@@ -22,7 +22,10 @@ pub enum RuntimeError {
     CantAccessPrivateMethod(),
     CantCallStaticMethodFromInstance(),
     ClassInheritFromItself(),
-    SuperClassMustBeSuperAClass()
+    SuperClassMustBeSuperAClass(),
+    InvalidSuperclass(),
+    UnresolvedSuper(),
+    InvalidClassMember()
 }
 
 impl fmt::Display for RuntimeError {
@@ -85,7 +88,17 @@ impl fmt::Display for RuntimeError {
             RuntimeError::SuperClassMustBeSuperAClass() => {
                 write!(f,"[RUNTIME ERROR]: SuperClass must be a SuperClass.")
 
-            }         
+            }  
+            RuntimeError::InvalidSuperclass() => {
+                write!(f,"[RUNTIME ERROR]: Invalid Superclass.")
+            }     
+            RuntimeError::UnresolvedSuper() => {
+                write!(f,"[RUNTIME ERROR]: Unresolved Super.")
+            }  
+            RuntimeError::InvalidClassMember() => {
+                write!(f,"[RUNTIME ERROR]: Invalid class member.")
+            }  
+            
         }
     }
 }

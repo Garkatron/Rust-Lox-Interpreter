@@ -301,17 +301,21 @@ impl fmt::Display for LoxValue {
             LoxValue::String(s) => write!(f, "String({})", s),
             LoxValue::Boolean(b) => write!(f, "Boolean({})", b),
             LoxValue::Callable(_d) => {
-                write!(f, "Callable()")
+                write!(f, "LoxCallable()")
             }
             LoxValue::Nil => write!(f, "nil"),
             LoxValue::LoxInstance(i) => {
-                write!(f, "Instance({})", i.borrow().lox_class.name)
+                write!(f, "LoxInstance({})", i.borrow().lox_class.name)
             }
             LoxValue::LoxClass(c) => {
-                write!(f, "Class({})", c.name)
+                if let Some(s) = &c.super_class {
+                    write!(f, "LoxClass({}) <- LoxSuper({})", c.name, s.name)
+                } else {
+                    write!(f, "LoxClass({})", c.name)
+                }
             }
             LoxValue::LoxFunction(ff) => {
-                write!(f, "Function({})" , ff)
+                write!(f, "LoxFunction({})" , ff)
             }
         }
     }

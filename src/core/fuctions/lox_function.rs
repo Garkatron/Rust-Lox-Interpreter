@@ -1,7 +1,7 @@
 use core::fmt;
 use std::{cell::RefCell, fmt::{Display, Formatter}, rc::Rc};
 
-use crate::{core::{environment::Environment, error_types::runtime_error::RuntimeError, interpreter::Interpreter, oop::{lox_class::LoxClass, lox_instance::LoxInstance}, syntax::components::{expression::LoxValue, stmt::Stmt}}, debug_dbg};
+use crate::core::{environment::Environment, error_types::runtime_error::RuntimeError, interpreter::Interpreter, oop::{lox_class::LoxClass, lox_instance::LoxInstance}, syntax::components::{expression::LoxValue, stmt::Stmt}};
 
 use super::lox_callable::LoxCallable;
 #[derive(Clone, Debug)]
