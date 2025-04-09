@@ -3,9 +3,6 @@ use std::rc::Rc;
 use std::usize;
 
 use rustc_hash::FxHashMap;
-
-use crate::debug_dbg;
-
 use super::environment::Environment;
 use super::error_types::runtime_error::RuntimeError;
 
