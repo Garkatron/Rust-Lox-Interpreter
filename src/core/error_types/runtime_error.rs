@@ -25,7 +25,9 @@ pub enum RuntimeError {
     SuperClassMustBeSuperAClass(),
     InvalidSuperclass(),
     UnresolvedSuper(),
-    InvalidClassMember()
+    InvalidClassMember(),
+    SuperWithoutSubclass(),
+    SuperOutsideClass()
 }
 
 impl fmt::Display for RuntimeError {
@@ -98,6 +100,12 @@ impl fmt::Display for RuntimeError {
             RuntimeError::InvalidClassMember() => {
                 write!(f,"[RUNTIME ERROR]: Invalid class member.")
             }  
+            RuntimeError::SuperOutsideClass() => {
+                write!(f,"[RUNTIME ERROR]: Can't use 'super' outside of a class.")
+            }
+            RuntimeError::SuperWithoutSubclass() => {
+                write!(f,"[RUNTIME ERROR]: Can't use 'super' in a class with no superclass.")
+            }
             
         }
     }

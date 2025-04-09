@@ -22,7 +22,8 @@ pub enum FunctionType {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ClassType {
     NONE,
-    CLASS
+    CLASS,
+    SUBCLASS
 }
 
 pub struct Resolver {
@@ -117,8 +118,16 @@ impl ExpressionVisitor<()> for Resolver {
         Ok(())
     }
     fn visit_super(&mut self, keyword: &Token, method: &Token) -> Result<(), RuntimeError> {
-        self.resolve_local(&Expr::Super { keyword: keyword.clone(), method: method.clone() }, keyword);
-        Ok(())
+        match self.current_class {
+            ClassType::NONE => Err(RuntimeError::SuperOutsideClass()),
+            ClassType::CLASS => Err(RuntimeError::SuperWithoutSubclass()),
+            ClassType::SUBCLASS => {
+                self.resolve_local(&Expr::Super { keyword: keyword.clone(), method: method.clone() }, keyword);
+                Ok(())
+            },
+        }
+        
+       
     }
 }
 
@@ -209,6 +218,7 @@ impl StatementVisitor<()> for Resolver {
         }
     
         if let Some(expr) = super_class {
+            self.current_class = ClassType::SUBCLASS;
             self.resolve_expr(expr)?;
             self.begin_scope();
             if let Some(scope) = self.scopes.last_mut() {
