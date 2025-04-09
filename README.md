@@ -1,5 +1,3 @@
-¡Perfecto! Aquí tienes la versión en inglés con buen estilo para GitHub, usando Markdown limpio, claro y con un tono personal pero profesional:
-
 ---
 
 # Rox
