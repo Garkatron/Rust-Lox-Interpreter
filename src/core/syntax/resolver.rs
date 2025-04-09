@@ -22,7 +22,8 @@ pub enum FunctionType {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ClassType {
     NONE,
-    CLASS
+    CLASS,
+    SUBCLASS
 }
 
 pub struct Resolver {
@@ -116,6 +117,18 @@ impl ExpressionVisitor<()> for Resolver {
         self.resolve_local(&Expr::Literal { id: 0, value: LoxValue::Nil },keyword);
         Ok(())
     }
+    fn visit_super(&mut self, keyword: &Token, method: &Token) -> Result<(), RuntimeError> {
+        match self.current_class {
+            ClassType::NONE => Err(RuntimeError::SuperOutsideClass()),
+            ClassType::CLASS => Err(RuntimeError::SuperWithoutSubclass()),
+            ClassType::SUBCLASS => {
+                self.resolve_local(&Expr::Super { keyword: keyword.clone(), method: method.clone() }, keyword);
+                Ok(())
+            },
+        }
+        
+       
+    }
 }
 
 impl StatementVisitor<()> for Resolver {
@@ -186,38 +199,61 @@ impl StatementVisitor<()> for Resolver {
         self.resolve_statement(body)?;
         Ok(())
     }
-    fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<(), RuntimeError> {
-        
+    fn visit_class(
+        &mut self,
+        name: &Token,
+        methods: &[Stmt],
+        super_class: &Option<Expr>,
+    ) -> Result<(), RuntimeError> {
         let enclosing_class = self.current_class;
         self.current_class = ClassType::CLASS;
-
+    
         self.declare(name);
         self.define(name);
-
-        self.begin_scope();
-        if let Some(current_scope) = self.scopes.last_mut() {
-            current_scope.insert("this".to_string(), true);
+    
+        if let Some(Expr::Variable { name: ref super_name, .. }) = super_class {
+            if name.lexeme == super_name.lexeme {
+                return Err(RuntimeError::ClassInheritFromItself());
+            }
         }
-
+    
+        if let Some(expr) = super_class {
+            self.current_class = ClassType::SUBCLASS;
+            self.resolve_expr(expr)?;
+            self.begin_scope();
+            if let Some(scope) = self.scopes.last_mut() {
+                scope.insert("super".to_string(), true);
+            }
+        }
+    
+        self.begin_scope();
+        if let Some(scope) = self.scopes.last_mut() {
+            scope.insert("this".to_string(), true);
+        }
+    
         for method in methods {
-            let declaration = if let Stmt::Function { token, .. } = method {
-                if token.lexeme == "init" {
+            if let Stmt::Function { token, .. } = method {
+                let declaration = if token.lexeme == "init" {
                     FunctionType::INITIALIZER
                 } else {
                     FunctionType::METHOD
-                }
+                };
+                self.resolve_function(method, declaration)?;
             } else {
-                todo!();
-            };
-    
-            
-            self.resolve_function(method, declaration)?;
+                return Err(RuntimeError::InvalidClassMember());
+            }
         }
-        self.end_scope();
+    
+        self.end_scope(); // `this`
+        if super_class.is_some() {
+            self.end_scope(); // `super`
+        }
+    
         self.current_class = enclosing_class;
-
+    
         Ok(())
     }
+    
     
 }
 

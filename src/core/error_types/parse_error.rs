@@ -28,7 +28,10 @@ pub enum ParseError {
     ExpectedIdentifier(usize, String),
     ExpectedParameterName(usize),
     ExpectClassName(usize),
-    ExpectedPropertyNameAfterDot(usize)
+    ExpectedPropertyNameAfterDot(usize),
+    ExpectedSuperClassName(usize),
+    ExpectDotAfterSuper(usize),
+    ExpectSuperClassMethodName(usize)
 }
 
 impl fmt::Display for ParseError {
@@ -109,6 +112,15 @@ impl fmt::Display for ParseError {
             }
             ParseError::ExpectedPropertyNameAfterDot(line) => {
                 write!(f, "[PARSER]: Expected property name after '.' at line {}", line)
+            }
+            ParseError::ExpectedSuperClassName(line) => {
+                write!(f, "[PARSER]: Expected superclass name at line {}", line)
+            }
+            ParseError::ExpectSuperClassMethodName(line) => {
+                write!(f, "[PARSER]: Expect superclass method name {}", line)
+            }
+            ParseError::ExpectDotAfterSuper(line) => {
+                write!(f, "[PARSER]: Expect dot after super name {}", line)
             }
         }
     }
@@ -193,6 +205,15 @@ impl ParseError {
             }
             ParseError::ExpectedPropertyNameAfterDot(line) => {
                 format!("[PARSER]: Expected property name after '.' at line {}", line)
+            }
+            ParseError::ExpectedSuperClassName(line) => {
+                format!("[PARSER]: Expected superclass name at line {}", line)
+            }
+            ParseError::ExpectSuperClassMethodName(line) => {
+                format!("[PARSER]: Expect superclass method name {}", line)
+            }
+            ParseError::ExpectDotAfterSuper(line) => {
+                format!("[PARSER]: Expect dot after super name {}", line)
             }
         }
     }

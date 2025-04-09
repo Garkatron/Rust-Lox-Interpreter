@@ -67,7 +67,11 @@ impl LoxInstance {
 
 impl Display for LoxInstance {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "LoxInstance({})", self.lox_class.name)
+        if let Some(s) = &self.lox_class.super_class {
+            write!(f, "LoxInstance({}) <- LoxSuper({})", self.lox_class.name, s.name)
+        } else {
+            write!(f, "LoxInstance({})", self.lox_class.name)
+        }
     }
 }
 

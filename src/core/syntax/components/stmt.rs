@@ -8,8 +8,8 @@ use super::expression::Expr;
 pub enum Stmt {
     Expression { expression: Expr },
     Print { expression: Expr },
-    Var { name: Token, initializer: Expr },
-    Class { name: Token, methods: Vec<Stmt>},
+    Var { name: Token, initializer: Expr},
+    Class { name: Token, methods: Vec<Stmt>, super_class: Option<Expr>},
     Block { statements: Vec<Stmt> },
     If { condition: Expr, then_branch: Box<Stmt>, else_branch: Option<Box<Stmt>> },
     While { condition: Expr, body: Box<Stmt>, else_branch: Option<Box<Stmt>> },
@@ -29,7 +29,7 @@ pub trait Visitor<R> {
     fn visit_loop(&mut self, body: &Stmt) -> Result<R, RuntimeError>;
     fn visit_break(&mut self) -> Result<R, RuntimeError>;
     fn visit_function(&mut self, token: &Token, params: &[Token], body: &[Stmt], public: bool, is_static: bool) -> Result<R, RuntimeError>;
-    fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<R, RuntimeError>;
+    fn visit_class(&mut self, name: &Token, methods: &[Stmt], super_class: &Option<Expr>) -> Result<R, RuntimeError>;
     fn visit_return(&mut self, keyword: &Token, value: &Expr) -> Result<R, RuntimeError>;
 }
 
@@ -56,8 +56,8 @@ impl Stmt {
             Stmt::Return { keyword, value } => {
                 visitor.visit_return(keyword, value)
             }
-            Stmt::Class { name, methods } => {
-                visitor.visit_class(name, methods)
+            Stmt::Class { name, methods, super_class } => {
+                visitor.visit_class(name, methods, super_class)
             }
         }
     }

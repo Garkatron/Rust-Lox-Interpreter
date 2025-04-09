@@ -7,7 +7,7 @@ use crate::core::oop::lox_class::LoxClass;
 use crate::core::oop::lox_instance::LoxInstance;
 use crate::core::{error_types::runtime_error::RuntimeError, syntax::token::Token};
 use std::sync::atomic::AtomicUsize;
-static NEXT_ID: AtomicUsize = AtomicUsize::new(1);
+static NEXT_ID: AtomicUsize = AtomicUsize::new(2);
 use std::hash::Hasher;
 use std::hash::Hash;
 
@@ -39,6 +39,10 @@ pub enum Expr {
         object: Box<Expr>,
         name: Token,
         value: Box<Expr>
+    },
+    Super {
+        keyword: Token,
+        method: Token
     },
     Grouping {
         id: usize,
@@ -163,6 +167,7 @@ pub trait Visitor<R> {
     fn visit_get(&mut self, name: &Token, object: &Expr) -> Result<R, RuntimeError>;
     fn visit_set(&mut self, object: &Expr, name: &Token, value: &Expr) -> Result<R, RuntimeError>;
     fn visit_this(&mut self, keyword: &Token) -> Result<R, RuntimeError>;
+    fn visit_super(&mut self, keyword: &Token, keyword: &Token) -> Result<R, RuntimeError>;
 }
 
 impl Expr {
@@ -200,6 +205,9 @@ impl Expr {
             }
             Expr::This { keyword, .. } => {
                 visitor.visit_this(keyword)
+            }
+            Expr::Super { keyword, method } => {
+                visitor.visit_super(keyword, method)
             }
         }
     }
@@ -260,6 +268,9 @@ impl fmt::Display for Expr {
             Expr::This { keyword , ..} => {
                 write!(f,"This {}", keyword)
             }
+            Expr::Super { keyword, method } => {
+                write!(f,"Super {} {}", keyword, method)
+            }
         }
     }
 }
@@ -290,17 +301,21 @@ impl fmt::Display for LoxValue {
             LoxValue::String(s) => write!(f, "String({})", s),
             LoxValue::Boolean(b) => write!(f, "Boolean({})", b),
             LoxValue::Callable(_d) => {
-                write!(f, "Callable()")
+                write!(f, "LoxCallable()")
             }
             LoxValue::Nil => write!(f, "nil"),
             LoxValue::LoxInstance(i) => {
-                write!(f, "Instance({})", i.borrow().lox_class.name)
+                write!(f, "LoxInstance({})", i.borrow().lox_class.name)
             }
             LoxValue::LoxClass(c) => {
-                write!(f, "Class({})", c.name)
+                if let Some(s) = &c.super_class {
+                    write!(f, "LoxClass({}) <- LoxSuper({})", c.name, s.name)
+                } else {
+                    write!(f, "LoxClass({})", c.name)
+                }
             }
             LoxValue::LoxFunction(ff) => {
-                write!(f, "Function({})" , ff)
+                write!(f, "LoxFunction({})" , ff)
             }
         }
     }

@@ -9,7 +9,7 @@ use std::rc::Rc;
 #[derive(Debug, Clone)]
 pub struct Environment {
     values: HashMap<String, LoxValue>,
-    enclosing: Option<Rc<RefCell<Environment>>>,
+    pub enclosing: Option<Rc<RefCell<Environment>>>,
 }
 
 impl Environment {

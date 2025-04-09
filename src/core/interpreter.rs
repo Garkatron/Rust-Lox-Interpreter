@@ -4,8 +4,7 @@ use std::usize;
 
 use rustc_hash::FxHashMap;
 
-use crate::core::syntax::token;
-use crate::{debug_dbg, debug_log};
+use crate::debug_dbg;
 
 use super::environment::Environment;
 use super::error_types::runtime_error::RuntimeError;
@@ -185,7 +184,7 @@ impl ExpressionVisitor<LoxValue> for Interpreter {
                 return Err(RuntimeError::ToManyArguments(
                     paren.clone(),
                     fun.arity(),
-                    arguments.len(),
+                    arguments.len()
                 ));
             } else {
                 return Ok(fun.call(self, args)?);
@@ -231,6 +230,42 @@ impl ExpressionVisitor<LoxValue> for Interpreter {
     fn visit_this(&mut self, keyword: &Token) -> Result<LoxValue, RuntimeError> {
         self.look_up_variable(keyword, &Expr::Literal { id: 0, value: LoxValue::Nil })
     }
+    fn visit_super(&mut self, keyword: &Token, method: &Token) -> Result<LoxValue, RuntimeError> {
+        let expr = Expr::Super {
+            keyword: keyword.clone(),
+            method: method.clone(),
+        };
+    
+        let distance = self.locals.get(&expr).copied();
+        
+        if let Some(distance) = distance {
+            let env = self.environment.borrow();
+    
+            let loxvalue = env.get_at(distance, "super")?;
+            let superclass = match loxvalue {
+                LoxValue::LoxClass(ref instance) => instance,
+                _ => return Err(RuntimeError::InvalidSuperclass()),
+            };
+    
+            let loxvalue2 = env.get_at(distance - 1, "this")?;
+            let instance = match loxvalue2 {
+                LoxValue::LoxInstance(ref instance) => instance,
+                _ => {todo!()},
+            };
+            
+            let method_value = superclass.find_method(&method.lexeme);
+            let method = match method_value {
+                LoxValue::LoxFunction(ref func) => func,
+                _ => return Err(RuntimeError::UndefinedProperty()),
+            };
+            
+            let bound_method = method.clone().bind(Rc::clone(instance))?;
+            return Ok(LoxValue::LoxFunction(bound_method.into()));
+        }
+    
+        Err(RuntimeError::UnresolvedSuper())
+    }
+    
 }
 impl StatementVisitor<()> for Interpreter {
     fn visit_expression(&mut self, expression: &Expr) -> Result<(), RuntimeError> {
@@ -356,21 +391,74 @@ impl StatementVisitor<()> for Interpreter {
         Err(RuntimeError::Return(val))
     }
 
-    fn visit_class(&mut self, name: &Token, methods: &[Stmt]) -> Result<(), RuntimeError> {
-        self.environment.borrow_mut().define(&name.lexeme, LoxValue::Nil)?;
-
-        let mut met = FxHashMap::default();
-        for method in methods  {
-            if let Stmt::Function { token, public, is_static, .. } = method {
-                let function = LoxFunction::new(method.clone(), Rc::clone(&self.environment), token.lexeme == "init", *public, *is_static);
-                met.insert(token.lexeme.clone(), function);
+    fn visit_class(
+        &mut self,
+        name: &Token,
+        methods: &[Stmt],
+        super_class: &Option<Expr>,
+    ) -> Result<(), RuntimeError> {
+        let super_klass = if let Some(expr) = super_class {
+            let evaluated = self.evaluate(expr)?;
+            match evaluated {
+                LoxValue::LoxClass(ref c) => Some(Box::new(c.clone())),
+                _ => return Err(RuntimeError::SuperClassMustBeSuperAClass()),
+            }
+        } else {
+            None
+        };
+    
+        self.environment
+            .borrow_mut()
+            .define(&name.lexeme, LoxValue::Nil)?;
+    
+        if let Some(ref super_class) = super_klass {
+            let parent = Rc::clone(&self.environment);
+            let mut new_env = Environment::new(Some(parent));
+            new_env.define("super", LoxValue::LoxClass(*super_class.clone()))?;
+            self.environment = Rc::new(RefCell::new(new_env));
+        }
+    
+        let mut methods_map = FxHashMap::default();
+        for method in methods {
+            if let Stmt::Function {
+                token,
+                public,
+                is_static,
+                ..
+            } = method
+            {
+                let is_initializer = token.lexeme == "init";
+                let function = LoxFunction::new(
+                    method.clone(),
+                    Rc::clone(&self.environment),
+                    is_initializer,
+                    *public,
+                    *is_static,
+                );
+                methods_map.insert(token.lexeme.clone(), function);
+            }
+        }
+    
+        let klass = LoxClass::new(name.lexeme.clone(), methods_map, super_klass.clone());
+    
+        if super_klass.is_some() {
+            let enclosing = {
+                let env = self.environment.borrow();
+                env.enclosing.clone()
+            };
+        
+            if let Some(enclosing) = enclosing {
+                self.environment = enclosing;
             }
         }
         
-        let loxclass = LoxClass::new(name.lexeme.clone(), met);
-        self.environment.borrow_mut().assign(name, LoxValue::LoxClass(loxclass))?;
+        self.environment
+            .borrow_mut()
+            .assign(name, LoxValue::LoxClass(klass))?;
+    
         Ok(())
     }
+    
 }
 
 impl Interpreter {
@@ -430,7 +518,7 @@ impl Interpreter {
         }
     }
 
-    fn stringify(&self, lit: &LoxValue) -> String {
+    /*fn stringify(&self, lit: &LoxValue) -> String {
         match lit {
             LoxValue::Nil => "nil".to_string(),
             LoxValue::Number(n) => n.to_string(),
@@ -441,7 +529,7 @@ impl Interpreter {
             LoxValue::LoxClass(c) => c.to_string(),
             LoxValue::LoxFunction(f) => f.to_string()
         }
-    }
+    }*/
 
     pub fn is_truthy(&self, value: &LoxValue) -> bool {
         match value {

@@ -21,6 +21,13 @@ pub enum RuntimeError {
     CantReturnFromInitializer(),
     CantAccessPrivateMethod(),
     CantCallStaticMethodFromInstance(),
+    ClassInheritFromItself(),
+    SuperClassMustBeSuperAClass(),
+    InvalidSuperclass(),
+    UnresolvedSuper(),
+    InvalidClassMember(),
+    SuperWithoutSubclass(),
+    SuperOutsideClass()
 }
 
 impl fmt::Display for RuntimeError {
@@ -76,7 +83,30 @@ impl fmt::Display for RuntimeError {
             }
             RuntimeError::CantCallStaticMethodFromInstance() => {
                 write!(f,"[RUNTIME ERROR]: Cannot call a static method from an instance of the class.")
-            }            
+            }   
+            RuntimeError::ClassInheritFromItself() => {
+                write!(f,"[RUNTIME ERROR]: A class can't inherit from itself.")
+            }
+            RuntimeError::SuperClassMustBeSuperAClass() => {
+                write!(f,"[RUNTIME ERROR]: SuperClass must be a SuperClass.")
+
+            }  
+            RuntimeError::InvalidSuperclass() => {
+                write!(f,"[RUNTIME ERROR]: Invalid Superclass.")
+            }     
+            RuntimeError::UnresolvedSuper() => {
+                write!(f,"[RUNTIME ERROR]: Unresolved Super.")
+            }  
+            RuntimeError::InvalidClassMember() => {
+                write!(f,"[RUNTIME ERROR]: Invalid class member.")
+            }  
+            RuntimeError::SuperOutsideClass() => {
+                write!(f,"[RUNTIME ERROR]: Can't use 'super' outside of a class.")
+            }
+            RuntimeError::SuperWithoutSubclass() => {
+                write!(f,"[RUNTIME ERROR]: Can't use 'super' in a class with no superclass.")
+            }
+            
         }
     }
 }
